@@ -1,7 +1,7 @@
 // payment.js
 
-async function initPayments() {
-    const sales = await api.getSales();
+function updatePaymentsUI(sales) {
+    if (!document.getElementById('paymentBreakdownList')) return;
     
     const methods = {
         'Cash': { amount: 0, icon: 'fa-money-bill-wave', color: 'text-success' },
@@ -20,8 +20,6 @@ async function initPayments() {
         if (s.status === 'Paid') {
             if (s.payment === 'Mixed') {
                 methods['Cash'].amount += (parseFloat(s.cashAmount) || 0);
-                // The online part goes into generic 'UPI' or we can create an 'Online Mixed' category.
-                // Assuming UPI for mixed online, or create a 'Mixed Online' bucket.
                 if (!methods['Mixed Online']) methods['Mixed Online'] = { amount: 0, icon: 'fa-globe', color: 'text-primary' };
                 methods['Mixed Online'].amount += (parseFloat(s.onlineAmount) || 0);
                 grandTotal += (parseFloat(s.cashAmount) || 0) + (parseFloat(s.onlineAmount) || 0);
@@ -30,7 +28,6 @@ async function initPayments() {
                     methods[s.payment].amount += parseFloat(s.amount);
                     grandTotal += parseFloat(s.amount);
                 } else {
-                    // Fallback
                     if (!methods['Other']) methods['Other'] = { amount: 0, icon: 'fa-circle-question', color: 'text-muted' };
                     methods['Other'].amount += parseFloat(s.amount);
                     grandTotal += parseFloat(s.amount);
@@ -63,4 +60,9 @@ async function initPayments() {
     }
     
     document.getElementById('pay-grand-total').textContent = utils.formatCurrency(grandTotal);
+}
+
+async function initPayments() {
+    const sales = await api.getSales();
+    updatePaymentsUI(sales);
 }

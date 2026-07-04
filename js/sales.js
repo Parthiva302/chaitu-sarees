@@ -179,6 +179,10 @@ async function submitSale(print = false) {
         
         utils.showToast("Sale Saved Successfully!");
         
+        if (typeof refreshEntireApplication === 'function') {
+            await refreshEntireApplication();
+        }
+        
         if (print) {
             printInvoice(saleData);
         }

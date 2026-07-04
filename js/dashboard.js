@@ -1,8 +1,7 @@
 // dashboard.js
 
-async function initDashboard() {
-    // Fetch data
-    const sales = await api.getSales();
+function updateDashboardUI(sales) {
+    if (!document.getElementById('dash-today-sales')) return;
     
     // Calculate Stats
     let todaySales = 0;
@@ -17,12 +16,12 @@ async function initDashboard() {
     
     const today = utils.getCurrentDate();
     
-    // Create a Set to count unique customers (by phone number) if needed, 
-    // or just count transactions as customers for this specific use case.
     const uniqueCustomers = new Set();
 
     sales.forEach(s => {
-        uniqueCustomers.add(s.phone);
+        if (s.phone) {
+            uniqueCustomers.add(s.phone);
+        }
         
         // Sum Qty
         const q500 = parseInt(s.sarees500) || 0;
@@ -89,6 +88,11 @@ async function initDashboard() {
     animateValue('summary-qty-total', 0, totalSarees500 + totalSarees1000, 1000);
 }
 
+async function initDashboard() {
+    const sales = await api.getSales();
+    updateDashboardUI(sales);
+}
+
 async function refreshDashboard() {
     const btn = document.querySelector('button.btn-outline-secondary');
     let originalHTML = '';
@@ -98,13 +102,15 @@ async function refreshDashboard() {
         btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Refreshing...';
     }
     
-    // Clear salesDataCache to fetch fresh data from server
-    salesDataCache = [];
-    await initDashboard();
+    if (typeof refreshEntireApplication === 'function') {
+        await refreshEntireApplication();
+    } else {
+        salesDataCache = [];
+        await initDashboard();
+    }
     
     if (btn) {
         btn.disabled = false;
         btn.innerHTML = originalHTML;
     }
 }
-

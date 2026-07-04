@@ -3,8 +3,8 @@
 let dailySalesChartInstance = null;
 let offerDistChartInstance = null;
 
-async function initReports() {
-    const sales = await api.getSales();
+function updateReportsUI(sales) {
+    if (!document.getElementById('rep-today')) return;
     
     let todaySales = 0;
     let monthlySales = 0;
@@ -54,6 +54,11 @@ async function initReports() {
     document.getElementById('rep-online').textContent = utils.formatCurrency(onlineCol);
     
     renderCharts(salesByDate, sarees500, sarees1000);
+}
+
+async function initReports() {
+    const sales = await api.getSales();
+    updateReportsUI(sales);
 }
 
 function renderCharts(salesByDate, sarees500, sarees1000) {

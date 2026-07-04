@@ -2,27 +2,49 @@
 
 let allRecords = [];
 
+function updateRecordsUI(sales) {
+    if (!document.getElementById('recordsTbody')) return;
+    allRecords = sales;
+    renderTable(allRecords);
+}
+
 async function initRecords() {
     allRecords = await api.getSales();
-    renderTable(allRecords);
+    updateRecordsUI(allRecords);
     
-    // Bind filters
-    document.getElementById('searchCustomer').addEventListener('input', filterRecords);
-    document.getElementById('searchInvoice').addEventListener('input', filterRecords);
-    document.getElementById('filterDate').addEventListener('change', (e) => {
-        const customContainer = document.getElementById('customDateContainer');
-        if (e.target.value === 'Custom') {
-            customContainer.classList.remove('d-none');
-        } else {
-            customContainer.classList.add('d-none');
-            filterRecords();
-        }
-    });
-    document.getElementById('customDate').addEventListener('change', filterRecords);
+    // Bind filters (removes previous if duplicate and registers new)
+    const searchCustomer = document.getElementById('searchCustomer');
+    if (searchCustomer) {
+        searchCustomer.addEventListener('input', filterRecords);
+    }
+    
+    const searchInvoice = document.getElementById('searchInvoice');
+    if (searchInvoice) {
+        searchInvoice.addEventListener('input', filterRecords);
+    }
+    
+    const filterDate = document.getElementById('filterDate');
+    if (filterDate) {
+        filterDate.addEventListener('change', (e) => {
+            const customContainer = document.getElementById('customDateContainer');
+            if (e.target.value === 'Custom') {
+                customContainer.classList.remove('d-none');
+            } else {
+                customContainer.classList.add('d-none');
+                filterRecords();
+            }
+        });
+    }
+    
+    const customDate = document.getElementById('customDate');
+    if (customDate) {
+        customDate.addEventListener('change', filterRecords);
+    }
 }
 
 function renderTable(data) {
     const tbody = document.getElementById('recordsTbody');
+    if (!tbody) return;
     tbody.innerHTML = '';
     
     if (data.length === 0) {
@@ -68,8 +90,8 @@ function filterRecords() {
     const yesterday = `${yYear}-${yMonth}-${yDay}`;
     
     const filtered = allRecords.filter(s => {
-        let matchCust = s.customerName.toLowerCase().includes(searchCust) || s.phone.includes(searchCust);
-        let matchInv = s.invoice.toLowerCase().includes(searchInv);
+        let matchCust = (s.customerName || '').toLowerCase().includes(searchCust) || (s.phone || '').toString().includes(searchCust);
+        let matchInv = (s.invoice || '').toLowerCase().includes(searchInv);
         let matchDate = true;
         
         if (dateFilter === 'Today') {
@@ -154,19 +176,19 @@ function printInvoiceByInvoice(invoice) {
     }
 }
 
-function deleteRecord(invoice) {
+async function deleteRecord(invoice) {
     if (confirm("Are you sure you want to delete this sale record?")) {
         const deletedInvoices = JSON.parse(localStorage.getItem('deletedInvoices') || '[]');
         deletedInvoices.push(invoice);
         localStorage.setItem('deletedInvoices', JSON.stringify(deletedInvoices));
         
-        // Remove from the global/cache array as well immediately
-        salesDataCache = salesDataCache.filter(s => s.invoice !== invoice);
-        allRecords = allRecords.filter(s => s.invoice !== invoice);
-        
-        // Re-render table and trigger filter to refresh UI
-        filterRecords();
+        if (typeof refreshEntireApplication === 'function') {
+            await refreshEntireApplication();
+        } else {
+            salesDataCache = salesDataCache.filter(s => s.invoice !== invoice);
+            allRecords = allRecords.filter(s => s.invoice !== invoice);
+            filterRecords();
+        }
         utils.showToast("Record deleted successfully.", "success");
     }
 }
-

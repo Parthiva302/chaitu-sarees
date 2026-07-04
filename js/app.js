@@ -123,6 +123,23 @@ const app = {
     }
 };
 
+window.appSalesData = [];
+
+async function refreshEntireApplication() {
+    try {
+        window.appSalesData = await api.getSales();
+        
+        // Safely update all views if their DOM components are currently active
+        if (typeof updateDashboardUI === 'function') updateDashboardUI(window.appSalesData);
+        if (typeof updateReportsUI === 'function') updateReportsUI(window.appSalesData);
+        if (typeof updatePaymentsUI === 'function') updatePaymentsUI(window.appSalesData);
+        if (typeof updateRecordsUI === 'function') updateRecordsUI(window.appSalesData);
+    } catch (e) {
+        console.error("Error refreshing application:", e);
+    }
+}
+
 function initApp() {
     app.init();
+    refreshEntireApplication();
 }
