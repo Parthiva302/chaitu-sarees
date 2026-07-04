@@ -44,13 +44,20 @@ const api = {
         }
 
         try {
+            // Use FormData to avoid CORS preflights. The browser will automatically
+            // set Content-Type to multipart/form-data with the correct boundary.
+            const formData = new FormData();
+            
+            // Append every field individually
+            for (const key in saleObject) {
+                if (saleObject.hasOwnProperty(key)) {
+                    formData.append(key, saleObject[key]);
+                }
+            }
+
             const response = await fetch(API_URL, {
                 method: "POST",
-                headers: {
-                    "Content-Type": "text/plain;charset=utf-8"
-                },
-                // Pass the data directly as requested by the user's Apps Script setup
-                body: JSON.stringify(saleObject)
+                body: formData
             });
             
             const result = await response.json();
