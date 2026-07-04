@@ -1,7 +1,7 @@
 // api.js
 
 // Replace this with your Google Apps Script Web App URL
-const API_URL = "https://script.google.com/macros/s/AKfycbyEaVQkOQl_-vfWObwyZq8NLFe1qcymlpISOgG0jjWD1uE0Frko-Ld8RAyVpFiHTYpX/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbxAtp6_h-TrIy4txzmUTB0kMw4GupekFPj2dkqHMggLltmd9Du20r6IGjNOU9fNttIO/exec";
 
 // In-memory cache for immediate UI updates
 let salesDataCache = [];
