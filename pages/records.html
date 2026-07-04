@@ -1,0 +1,66 @@
+<!-- pages/records.html -->
+<div class="container-fluid p-0">
+    <h2 class="fw-bold text-primary-custom mb-4"><i class="fa-solid fa-table-list me-2"></i> Sales Records</h2>
+
+    <div class="glass-card p-4">
+        <!-- Filters -->
+        <div class="row g-3 mb-4">
+            <div class="col-md-3">
+                <input type="text" class="form-control" id="searchCustomer" placeholder="Search Customer...">
+            </div>
+            <div class="col-md-3">
+                <input type="text" class="form-control" id="searchInvoice" placeholder="Search Invoice...">
+            </div>
+            <div class="col-md-3">
+                <select class="form-select" id="filterDate">
+                    <option value="All">All Time</option>
+                    <option value="Today" selected>Today</option>
+                    <option value="Yesterday">Yesterday</option>
+                    <option value="Custom">Custom Date</option>
+                </select>
+            </div>
+            <div class="col-md-3 d-none" id="customDateContainer">
+                <input type="date" class="form-control" id="customDate">
+            </div>
+        </div>
+
+        <!-- Table -->
+        <div class="table-responsive">
+            <table class="table table-hover align-middle" id="recordsTable">
+                <thead class="table-light">
+                    <tr>
+                        <th>Invoice</th>
+                        <th>Date & Time</th>
+                        <th>Customer</th>
+                        <th>Sarees</th>
+                        <th>Amount</th>
+                        <th>Payment</th>
+                        <th>Status</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="recordsTbody">
+                    <!-- Loaded via JS -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- View Record Modal -->
+<div class="modal fade" id="viewRecordModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary-custom text-white">
+                <h5 class="modal-title">Sale Details</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="recordDetailsBody">
+                <!-- details -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>

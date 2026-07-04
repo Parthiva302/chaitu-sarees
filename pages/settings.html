@@ -1,0 +1,55 @@
+<!-- pages/settings.html -->
+<div class="container-fluid p-0 max-w-800 mx-auto">
+    <h2 class="fw-bold text-primary-custom mb-4"><i class="fa-solid fa-gear me-2"></i> Settings</h2>
+
+    <div class="glass-card p-4 mb-4">
+        <h5 class="fw-bold mb-3 text-muted border-bottom pb-2">Shop Information</h5>
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label class="form-label fw-bold">Shop Name</label>
+                <input type="text" class="form-control" id="shopName" value="Chaitu Sarees">
+            </div>
+            <div class="col-md-6">
+                <label class="form-label fw-bold">Contact Number</label>
+                <input type="text" class="form-control" id="shopPhone" value="+91 9876543210">
+            </div>
+            <div class="col-12 mt-3">
+                <label class="form-label fw-bold">Upload Logo</label>
+                <input class="form-control" type="file" id="shopLogo" accept="image/*">
+            </div>
+        </div>
+        <div class="mt-3 text-end">
+            <button class="btn btn-primary-custom px-4" onclick="utils.showToast('Shop info updated!')">Save Information</button>
+        </div>
+    </div>
+
+    <div class="glass-card p-4 mb-4">
+        <h5 class="fw-bold mb-3 text-muted border-bottom pb-2">Appearance</h5>
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h6 class="fw-bold mb-1">Dark Mode</h6>
+                <small class="text-muted">Switch to a darker theme for better visibility at night.</small>
+            </div>
+            <div class="form-check form-switch form-switch-lg">
+                <input class="form-check-input fs-4" type="checkbox" role="switch" id="darkModeToggle">
+            </div>
+        </div>
+    </div>
+
+    <div class="glass-card p-4">
+        <h5 class="fw-bold mb-3 text-muted border-bottom pb-2">Data Management</h5>
+        <p class="text-muted mb-4">Backup your current sales data locally or restore from a previous backup file.</p>
+        
+        <div class="d-flex gap-3">
+            <button class="btn btn-outline-success" onclick="utils.showToast('Data Backed Up successfully!')">
+                <i class="fa-solid fa-download me-2"></i> Backup Data
+            </button>
+            <button class="btn btn-outline-primary" onclick="utils.showToast('Data Restored!')">
+                <i class="fa-solid fa-upload me-2"></i> Restore Data
+            </button>
+            <button class="btn btn-outline-danger ms-auto" onclick="confirm('Are you sure you want to clear all data? This cannot be undone!')">
+                <i class="fa-solid fa-trash me-2"></i> Factory Reset
+            </button>
+        </div>
+    </div>
+</div>

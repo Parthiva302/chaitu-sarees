@@ -1,0 +1,49 @@
+<!-- pages/reports.html -->
+<div class="container-fluid p-0">
+    <h2 class="fw-bold text-primary-custom mb-4"><i class="fa-solid fa-chart-line me-2"></i> Reports</h2>
+
+    <div class="row g-4 mb-5">
+        <div class="col-12 col-md-6 col-lg-3">
+            <div class="glass-card p-3 text-center border-top border-4 border-primary">
+                <h6 class="text-muted mb-2">Today's Sales</h6>
+                <h3 class="fw-bold text-primary-custom" id="rep-today">₹0</h3>
+            </div>
+        </div>
+        <div class="col-12 col-md-6 col-lg-3">
+            <div class="glass-card p-3 text-center border-top border-4 border-secondary">
+                <h6 class="text-muted mb-2">Monthly Sales</h6>
+                <h3 class="fw-bold" style="color: var(--secondary-color);" id="rep-monthly">₹0</h3>
+            </div>
+        </div>
+        <div class="col-12 col-md-6 col-lg-3">
+            <div class="glass-card p-3 text-center border-top border-4 border-success">
+                <h6 class="text-muted mb-2">Cash Collection (M)</h6>
+                <h3 class="fw-bold text-success" id="rep-cash">₹0</h3>
+            </div>
+        </div>
+        <div class="col-12 col-md-6 col-lg-3">
+            <div class="glass-card p-3 text-center border-top border-4 border-info">
+                <h6 class="text-muted mb-2">Online Collection (M)</h6>
+                <h3 class="fw-bold text-info" id="rep-online">₹0</h3>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Daily Sales Line Chart -->
+        <div class="col-12 col-lg-8">
+            <div class="glass-card p-4 h-100">
+                <h5 class="fw-bold mb-4">Daily Sales (Last 7 Days)</h5>
+                <canvas id="dailySalesChart" height="100"></canvas>
+            </div>
+        </div>
+
+        <!-- Offer Distribution Pie Chart -->
+        <div class="col-12 col-lg-4">
+            <div class="glass-card p-4 h-100">
+                <h5 class="fw-bold mb-4">Offer Distribution</h5>
+                <canvas id="offerDistChart" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+</div>

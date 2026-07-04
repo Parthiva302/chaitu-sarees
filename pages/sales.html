@@ -1,0 +1,134 @@
+<!-- pages/sales.html -->
+<div class="container-fluid p-0 max-w-800 mx-auto">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold text-primary-custom mb-0"><i class="fa-solid fa-cart-plus me-2"></i> New Sale</h2>
+        <div id="invoice-preview" class="badge bg-secondary-custom fs-6">#CS-20260705-001</div>
+    </div>
+
+    <div class="glass-card p-4">
+        <form id="newSaleForm">
+            <!-- Customer Details -->
+            <h5 class="fw-bold mb-3 text-muted border-bottom pb-2">Customer Information</h5>
+            <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Customer Name <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control form-control-lg" id="customerName" placeholder="Enter name" required>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Phone Number <span class="text-danger">*</span></label>
+                    <input type="tel" class="form-control form-control-lg" id="customerPhone" placeholder="10-digit number" pattern="[0-9]{10}" maxlength="10" required>
+                </div>
+            </div>
+
+            <!-- Offer Category -->
+            <h5 class="fw-bold mb-3 text-muted border-bottom pb-2">Offer Category</h5>
+            <div class="offer-selector">
+                <label class="offer-option selected">
+                    <input type="radio" name="offerCategory" value="₹500 Offer" checked>
+                    <h4>₹500 Offer</h4>
+                </label>
+                <label class="offer-option">
+                    <input type="radio" name="offerCategory" value="₹1000 Offer">
+                    <h4>₹1000 Offer</h4>
+                </label>
+            </div>
+
+            <!-- Quantities -->
+            <h5 class="fw-bold mb-3 text-muted border-bottom pb-2 mt-4">Saree Quantity</h5>
+            
+            <div class="stepper-container shadow-sm">
+                <div class="stepper-label fs-5"><span class="badge bg-success me-2">₹500</span> Sarees</div>
+                <div class="stepper-controls">
+                    <button type="button" class="btn-stepper" onclick="updateQty('qty500', -1)"><i class="fa-solid fa-minus"></i></button>
+                    <span class="stepper-value" id="qty500-val">0</span>
+                    <input type="hidden" id="qty500" value="0">
+                    <button type="button" class="btn-stepper" onclick="updateQty('qty500', 1)"><i class="fa-solid fa-plus"></i></button>
+                </div>
+            </div>
+
+            <div class="stepper-container shadow-sm">
+                <div class="stepper-label fs-5"><span class="badge bg-info me-2">₹1000</span> Sarees</div>
+                <div class="stepper-controls">
+                    <button type="button" class="btn-stepper" style="background: #03a9f4;" onclick="updateQty('qty1000', -1)"><i class="fa-solid fa-minus"></i></button>
+                    <span class="stepper-value" id="qty1000-val">0</span>
+                    <input type="hidden" id="qty1000" value="0">
+                    <button type="button" class="btn-stepper" style="background: #03a9f4;" onclick="updateQty('qty1000', 1)"><i class="fa-solid fa-plus"></i></button>
+                </div>
+            </div>
+
+            <!-- Totals Box -->
+            <div class="totals-box shadow-md">
+                <div class="totals-row">
+                    <span>Total Sarees</span>
+                    <span id="totalSareesDisplay">0</span>
+                </div>
+                <div class="totals-row grand-total">
+                    <span>Total Amount</span>
+                    <span id="totalAmountDisplay">₹0</span>
+                </div>
+            </div>
+
+            <!-- Payment Details -->
+            <h5 class="fw-bold mb-3 text-muted border-bottom pb-2 mt-4">Payment Details</h5>
+            <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Payment Method <span class="text-danger">*</span></label>
+                    <select class="form-select form-select-lg" id="paymentMethod" required>
+                        <option value="" selected disabled>Select Method</option>
+                        <option value="Cash">Cash</option>
+                        <option value="PhonePe">PhonePe</option>
+                        <option value="Google Pay">Google Pay</option>
+                        <option value="Paytm">Paytm</option>
+                        <option value="UPI">UPI</option>
+                        <option value="Debit Card">Debit Card</option>
+                        <option value="Credit Card">Credit Card</option>
+                        <option value="Bank Transfer">Bank Transfer</option>
+                        <option value="Mixed">Mixed (Cash + Online)</option>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Payment Status <span class="text-danger">*</span></label>
+                    <div class="status-toggle btn-group w-100" role="group">
+                        <input type="radio" class="btn-check" name="paymentStatus" id="statusPaid" value="Paid" autocomplete="off" checked>
+                        <label class="btn btn-outline-success border-2 fw-bold" for="statusPaid">Paid</label>
+
+                        <input type="radio" class="btn-check" name="paymentStatus" id="statusPending" value="Pending" autocomplete="off">
+                        <label class="btn btn-outline-danger border-2 fw-bold" for="statusPending">Pending</label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mixed Payment Split (Hidden by default) -->
+            <div class="row g-3 mb-4 bg-light p-3 rounded d-none border" id="mixedPaymentDiv">
+                <div class="col-md-6">
+                    <label class="form-label fw-bold text-success">Cash Amount</label>
+                    <input type="number" class="form-control form-control-lg" id="cashAmount" placeholder="₹ 0">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-bold text-primary">Online Amount</label>
+                    <input type="number" class="form-control form-control-lg" id="onlineAmount" placeholder="₹ 0">
+                </div>
+                <div class="col-12 text-center text-danger fw-bold d-none" id="mixedErrorMsg">
+                    Amounts do not match Total!
+                </div>
+            </div>
+
+            <!-- Notes -->
+            <div class="mb-4">
+                <label class="form-label fw-bold text-muted">Notes (Optional)</label>
+                <textarea class="form-control" id="notes" rows="2" placeholder="Any additional information..."></textarea>
+            </div>
+
+            <!-- Actions -->
+            <div class="d-flex gap-3 justify-content-end mt-5 pt-3 border-top">
+                <button type="button" class="btn btn-light btn-lg px-4" onclick="clearForm()">Clear</button>
+                <button type="button" class="btn btn-primary-custom btn-lg px-4" onclick="submitSale(false)">
+                    <i class="fa-solid fa-save me-2"></i> Save
+                </button>
+                <button type="button" class="btn btn-accent btn-lg px-4 text-white" onclick="submitSale(true)">
+                    <i class="fa-solid fa-print me-2"></i> Save & Print
+                </button>
+            </div>
+        </form>
+    </div>
+</div>

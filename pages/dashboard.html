@@ -1,0 +1,126 @@
+<!-- pages/dashboard.html -->
+<div class="container-fluid p-0">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold text-primary-custom mb-0">Overview</h2>
+        <div>
+            <button class="btn btn-outline-secondary me-2"><i class="fa-solid fa-rotate-right"></i> Refresh</button>
+            <button class="btn btn-primary-custom" onclick="app.navigate('reports')"><i class="fa-solid fa-chart-pie me-1"></i> Full Report</button>
+        </div>
+    </div>
+
+    <!-- Top Statistics Cards -->
+    <div class="row g-4 mb-4">
+        <div class="col-12 col-md-6 col-xl-3">
+            <div class="stat-card stat-primary glass-card">
+                <div>
+                    <p>Today's Sales</p>
+                    <h3 id="dash-today-sales">₹0</h3>
+                </div>
+                <div class="icon-box"><i class="fa-solid fa-indian-rupee-sign"></i></div>
+            </div>
+        </div>
+        <div class="col-12 col-md-6 col-xl-3">
+            <div class="stat-card stat-success glass-card">
+                <div>
+                    <p>Cash Collection</p>
+                    <h3 id="dash-cash">₹0</h3>
+                </div>
+                <div class="icon-box"><i class="fa-solid fa-money-bill-wave"></i></div>
+            </div>
+        </div>
+        <div class="col-12 col-md-6 col-xl-3">
+            <div class="stat-card stat-info glass-card">
+                <div>
+                    <p>Online Collection</p>
+                    <h3 id="dash-online">₹0</h3>
+                </div>
+                <div class="icon-box"><i class="fa-brands fa-google-pay"></i></div>
+            </div>
+        </div>
+        <div class="col-12 col-md-6 col-xl-3">
+            <div class="stat-card stat-danger glass-card">
+                <div>
+                    <p>Pending Payments</p>
+                    <h3 id="dash-pending">₹0</h3>
+                </div>
+                <div class="icon-box"><i class="fa-solid fa-clock-rotate-left"></i></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Secondary Stats -->
+    <div class="row g-4 mb-4">
+        <div class="col-12 col-md-4">
+            <div class="stat-card stat-dark glass-card">
+                <div>
+                    <p>Total Customers</p>
+                    <h3 id="dash-customers">0</h3>
+                </div>
+                <div class="icon-box"><i class="fa-solid fa-users"></i></div>
+            </div>
+        </div>
+        <div class="col-12 col-md-4">
+            <div class="stat-card stat-accent glass-card">
+                <div>
+                    <p>₹500 Offer Customers</p>
+                    <h3 id="dash-customers-500">0</h3>
+                </div>
+                <div class="icon-box"><i class="fa-solid fa-tag"></i></div>
+            </div>
+        </div>
+        <div class="col-12 col-md-4">
+            <div class="stat-card stat-secondary glass-card">
+                <div>
+                    <p>₹1000 Offer Customers</p>
+                    <h3 id="dash-customers-1000">0</h3>
+                </div>
+                <div class="icon-box"><i class="fa-solid fa-tags"></i></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Special Summary Cards -->
+    <h4 class="fw-bold text-primary-custom mb-3 mt-5">Items Sold Summary</h4>
+    <div class="row g-4 mb-5">
+        <div class="col-12 col-md-4">
+            <div class="summary-card summary-500 glass-card">
+                <span>🟢 ₹500 Sarees Sold</span>
+                <h2 id="summary-qty-500">0</h2>
+                <small class="text-white opacity-75">Total Quantity</small>
+            </div>
+        </div>
+        <div class="col-12 col-md-4">
+            <div class="summary-card summary-1000 glass-card">
+                <span>🔵 ₹1000 Sarees Sold</span>
+                <h2 id="summary-qty-1000">0</h2>
+                <small class="text-white opacity-75">Total Quantity</small>
+            </div>
+        </div>
+        <div class="col-12 col-md-4">
+            <div class="summary-card summary-total glass-card">
+                <span>🟣 Total Sarees Sold</span>
+                <h2 id="summary-qty-total">0</h2>
+                <small class="text-white opacity-75">Automatically Calculated</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mega Offer Section -->
+    <div class="row g-4 mb-4">
+        <div class="col-12 col-md-6">
+            <div class="offer-card glass-card">
+                <h3>₹500 OFFER</h3>
+                <p>For Sarees Below ₹1000</p>
+                <button class="btn btn-primary-custom btn-lg w-100 mt-3" onclick="app.navigate('sales')">Start Sale <i class="fa-solid fa-arrow-right ms-2"></i></button>
+            </div>
+        </div>
+        <div class="col-12 col-md-6">
+            <div class="offer-card glass-card" style="border-top-color: var(--secondary-color);">
+                <h3 style="color: var(--secondary-color);">₹1000 OFFER</h3>
+                <p>For Sarees Below ₹2000</p>
+                <button class="btn btn-secondary-custom btn-lg w-100 mt-3 text-white" onclick="app.navigate('sales')">Start Sale <i class="fa-solid fa-arrow-right ms-2"></i></button>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,110 @@
+/* dashboard.css */
+
+.stat-card {
+    border: none;
+    border-radius: var(--border-radius);
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    color: white;
+    box-shadow: var(--shadow-md);
+    transition: transform 0.3s;
+}
+.stat-card:hover {
+    transform: translateY(-5px);
+}
+.stat-card .icon-box {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+}
+.stat-card h3 {
+    margin: 0;
+    font-size: 1.8rem;
+    font-weight: 700;
+}
+.stat-card p {
+    margin: 0;
+    font-size: 0.9rem;
+    opacity: 0.9;
+}
+
+.stat-primary { background: linear-gradient(135deg, var(--primary-color), #a2003c); }
+.stat-success { background: linear-gradient(135deg, var(--success-color), #4caf50); }
+.stat-accent { background: linear-gradient(135deg, var(--accent-color), #ffc107); }
+.stat-danger { background: linear-gradient(135deg, var(--danger-color), #f44336); }
+.stat-secondary { background: linear-gradient(135deg, var(--secondary-color), #e91e63); }
+.stat-info { background: linear-gradient(135deg, #0288D1, #03a9f4); }
+.stat-dark { background: linear-gradient(135deg, #424242, #757575); }
+
+/* Special Summary Cards */
+.summary-card {
+    border-radius: var(--border-radius);
+    padding: 25px;
+    color: white;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+}
+.summary-card::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(255,255,255,0.2) 0%, transparent 60%);
+    animation: rotate 10s linear infinite;
+}
+@keyframes rotate {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+.summary-500 { background: linear-gradient(135deg, #4caf50, #81c784); }
+.summary-1000 { background: linear-gradient(135deg, #03a9f4, #4fc3f7); }
+.summary-total { background: linear-gradient(135deg, #9c27b0, #ba68c8); }
+
+.summary-card h2 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin: 10px 0 0;
+    position: relative;
+    z-index: 2;
+}
+.summary-card span {
+    font-size: 1.1rem;
+    font-weight: 500;
+    position: relative;
+    z-index: 2;
+}
+
+/* Mega Offer Cards */
+.offer-card {
+    border: none;
+    border-radius: var(--border-radius);
+    text-align: center;
+    padding: 30px 20px;
+    background: white;
+    box-shadow: var(--shadow-sm);
+    transition: transform 0.3s, box-shadow 0.3s;
+    border-top: 5px solid var(--primary-color);
+}
+.offer-card:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-md);
+}
+.offer-card h3 {
+    color: var(--primary-color);
+    font-weight: 700;
+    font-size: 2rem;
+}
+.offer-card p {
+    color: var(--text-muted);
+    font-size: 1.1rem;
+}
