@@ -7,7 +7,7 @@ function initSales() {
     // Get last invoice from cache if available
     let lastInv = '';
     if (salesDataCache.length > 0) {
-        lastInv = salesDataCache[0].invoice;
+        lastInv = salesDataCache[0].invoiceNumber;
     }
     currentInvoiceNumber = utils.generateInvoiceNumber(lastInv);
     document.getElementById('invoice-preview').textContent = '#' + currentInvoiceNumber;
@@ -141,18 +141,18 @@ async function submitSale(print = false) {
     }
     
     const saleData = {
-        invoice: currentInvoiceNumber,
+        invoiceNumber: currentInvoiceNumber,
         customerName: document.getElementById('customerName').value,
         phone: document.getElementById('customerPhone').value,
-        offer: document.querySelector('input[name="offerCategory"]:checked').value,
-        sarees500: q500,
-        sarees1000: q1000,
+        offerCategory: document.querySelector('input[name="offerCategory"]:checked').value,
+        qty500: q500,
+        qty1000: q1000,
         totalSarees: totalSarees,
         amount: totalAmount,
-        payment: method,
+        paymentMethod: method,
         cashAmount: method === 'Mixed' ? parseFloat(document.getElementById('cashAmount').value) : 0,
         onlineAmount: method === 'Mixed' ? parseFloat(document.getElementById('onlineAmount').value) : 0,
-        status: document.querySelector('input[name="paymentStatus"]:checked').value,
+        paymentStatus: document.querySelector('input[name="paymentStatus"]:checked').value,
         notes: document.getElementById('notes').value,
         date: utils.getCurrentDate(),
         time: utils.getCurrentTime()
@@ -191,7 +191,7 @@ function printInvoice(data) {
     const html = `
     <html>
     <head>
-        <title>Invoice - ${data.invoice}</title>
+        <title>Invoice - ${data.invoiceNumber}</title>
         <style>
             body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; padding: 20px; color: #333; }
             .header { text-align: center; border-bottom: 2px solid #7B002C; padding-bottom: 10px; margin-bottom: 20px; }
@@ -223,9 +223,9 @@ function printInvoice(data) {
                 <strong>Phone:</strong> ${data.phone}
             </div>
             <div style="text-align: right;">
-                <strong>Invoice:</strong> ${data.invoice}<br>
+                <strong>Invoice:</strong> ${data.invoiceNumber}<br>
                 <strong>Date:</strong> ${data.date} ${data.time}<br>
-                <strong>Offer:</strong> ${data.offer}
+                <strong>Offer:</strong> ${data.offerCategory}
             </div>
         </div>
         <table>
@@ -238,19 +238,19 @@ function printInvoice(data) {
                 </tr>
             </thead>
             <tbody>
-                ${data.sarees500 > 0 ? `
+                ${data.qty500 > 0 ? `
                 <tr>
                     <td>₹500 Saree</td>
-                    <td>${data.sarees500}</td>
+                    <td>${data.qty500}</td>
                     <td>₹500</td>
-                    <td>₹${data.sarees500 * 500}</td>
+                    <td>₹${data.qty500 * 500}</td>
                 </tr>` : ''}
-                ${data.sarees1000 > 0 ? `
+                ${data.qty1000 > 0 ? `
                 <tr>
                     <td>₹1000 Saree</td>
-                    <td>${data.sarees1000}</td>
+                    <td>${data.qty1000}</td>
                     <td>₹1000</td>
-                    <td>₹${data.sarees1000 * 1000}</td>
+                    <td>₹${data.qty1000 * 1000}</td>
                 </tr>` : ''}
             </tbody>
         </table>
@@ -260,8 +260,8 @@ function printInvoice(data) {
         </div>
         <div class="details" style="border: 1px solid #ddd; padding: 10px;">
             <div>
-                <strong>Payment Method:</strong> ${data.payment}<br>
-                <strong>Status:</strong> ${data.status}
+                <strong>Payment Method:</strong> ${data.paymentMethod}<br>
+                <strong>Status:</strong> ${data.paymentStatus}
             </div>
         </div>
         <div class="footer">
