@@ -13,7 +13,7 @@ function initSales() {
     document.getElementById('invoice-preview').textContent = '#' + currentInvoiceNumber;
 
     // Offer Selection Styling
-    const offerRadios = document.querySelectorAll('input[name="offerCategory"]');
+    const offerRadios = document.querySelectorAll('input[name="offer"]');
     offerRadios.forEach(radio => {
         radio.addEventListener('change', (e) => {
             document.querySelectorAll('.offer-option').forEach(opt => opt.classList.remove('selected'));
@@ -22,9 +22,9 @@ function initSales() {
     });
 
     // Payment Method change event
-    const paymentMethod = document.getElementById('paymentMethod');
-    if (paymentMethod) {
-        paymentMethod.addEventListener('change', handlePaymentMethodChange);
+    const payment = document.getElementById('payment');
+    if (payment) {
+        payment.addEventListener('change', handlePaymentMethodChange);
     }
     
     // Mixed Inputs calculation
@@ -48,8 +48,8 @@ function updateQty(id, change) {
 }
 
 function calculateTotals() {
-    const q500 = utils.parseQty(document.getElementById('qty500').value);
-    const q1000 = utils.parseQty(document.getElementById('qty1000').value);
+    const q500 = utils.parseQty(document.getElementById('sarees500').value);
+    const q1000 = utils.parseQty(document.getElementById('sarees1000').value);
     
     const totalSarees = q500 + q1000;
     const totalAmount = (q500 * 500) + (q1000 * 1000);
@@ -58,7 +58,7 @@ function calculateTotals() {
     document.getElementById('totalAmountDisplay').textContent = utils.formatCurrency(totalAmount);
     
     // Also trigger mixed amounts validation if visible
-    if (document.getElementById('paymentMethod').value === 'Mixed') {
+    if (document.getElementById('payment').value === 'Mixed') {
         validateMixedAmounts();
     }
 }
@@ -78,11 +78,11 @@ function handlePaymentMethodChange(e) {
 }
 
 function validateMixedAmounts() {
-    const method = document.getElementById('paymentMethod').value;
+    const method = document.getElementById('payment').value;
     if (method !== 'Mixed') return true;
     
-    const q500 = utils.parseQty(document.getElementById('qty500').value);
-    const q1000 = utils.parseQty(document.getElementById('qty1000').value);
+    const q500 = utils.parseQty(document.getElementById('sarees500').value);
+    const q1000 = utils.parseQty(document.getElementById('sarees1000').value);
     const totalAmount = (q500 * 500) + (q1000 * 1000);
     
     const cash = parseFloat(document.getElementById('cashAmount').value) || 0;
@@ -102,10 +102,10 @@ function validateMixedAmounts() {
 function clearForm() {
     document.getElementById('newSaleForm').reset();
     
-    document.getElementById('qty500').value = 0;
-    document.getElementById('qty500-val').textContent = 0;
-    document.getElementById('qty1000').value = 0;
-    document.getElementById('qty1000-val').textContent = 0;
+    document.getElementById('sarees500').value = 0;
+    document.getElementById('sarees500-val').textContent = 0;
+    document.getElementById('sarees1000').value = 0;
+    document.getElementById('sarees1000-val').textContent = 0;
     
     document.querySelectorAll('.offer-option').forEach(opt => opt.classList.remove('selected'));
     document.querySelector('input[value="₹500 Offer"]').checked = true;
@@ -124,8 +124,8 @@ async function submitSale(print = false) {
         return;
     }
     
-    const q500 = utils.parseQty(document.getElementById('qty500').value);
-    const q1000 = utils.parseQty(document.getElementById('qty1000').value);
+    const q500 = utils.parseQty(document.getElementById('sarees500').value);
+    const q1000 = utils.parseQty(document.getElementById('sarees1000').value);
     const totalSarees = q500 + q1000;
     const totalAmount = (q500 * 500) + (q1000 * 1000);
     
@@ -134,7 +134,7 @@ async function submitSale(print = false) {
         return;
     }
     
-    const method = document.getElementById('paymentMethod').value;
+    const method = document.getElementById('payment').value;
     if (method === 'Mixed' && !validateMixedAmounts()) {
         alert("Cash and Online amounts do not add up to Total Amount.");
         return;
@@ -147,7 +147,7 @@ async function submitSale(print = false) {
 
         phone: document.getElementById('customerPhone').value,
 
-        offer: document.querySelector('input[name="offerCategory"]:checked').value,
+        offer: document.querySelector('input[name="offer"]:checked').value,
 
         sarees500: q500,
 
@@ -159,7 +159,7 @@ async function submitSale(print = false) {
 
         payment: method,
 
-        status: document.querySelector('input[name="paymentStatus"]:checked').value,
+        status: document.querySelector('input[name="status"]:checked').value,
 
         notes: document.getElementById('notes').value,
 

@@ -17,8 +17,8 @@ async function initPayments() {
     let grandTotal = 0;
     
     sales.forEach(s => {
-        if (s.paymentStatus === 'Paid') {
-            if (s.paymentMethod === 'Mixed') {
+        if (s.status === 'Paid') {
+            if (s.payment === 'Mixed') {
                 methods['Cash'].amount += (parseFloat(s.cashAmount) || 0);
                 // The online part goes into generic 'UPI' or we can create an 'Online Mixed' category.
                 // Assuming UPI for mixed online, or create a 'Mixed Online' bucket.
@@ -26,8 +26,8 @@ async function initPayments() {
                 methods['Mixed Online'].amount += (parseFloat(s.onlineAmount) || 0);
                 grandTotal += (parseFloat(s.cashAmount) || 0) + (parseFloat(s.onlineAmount) || 0);
             } else {
-                if (methods[s.paymentMethod]) {
-                    methods[s.paymentMethod].amount += parseFloat(s.amount);
+                if (methods[s.payment]) {
+                    methods[s.payment].amount += parseFloat(s.amount);
                     grandTotal += parseFloat(s.amount);
                 } else {
                     // Fallback

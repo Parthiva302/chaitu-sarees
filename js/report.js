@@ -16,8 +16,8 @@ async function initReports() {
     
     // Aggregation objects for charts
     const salesByDate = {};
-    let qty500 = 0;
-    let qty1000 = 0;
+    let sarees500 = 0;
+    let sarees1000 = 0;
     
     sales.forEach(s => {
         const amt = parseFloat(s.amount) || 0;
@@ -25,9 +25,9 @@ async function initReports() {
         // Month stats
         if (s.date.startsWith(currentMonth)) {
             monthlySales += amt;
-            if (s.paymentStatus === 'Paid') {
-                if (s.paymentMethod === 'Cash') cashCol += amt;
-                else if (s.paymentMethod === 'Mixed') {
+            if (s.status === 'Paid') {
+                if (s.payment === 'Cash') cashCol += amt;
+                else if (s.payment === 'Mixed') {
                     cashCol += (parseFloat(s.cashAmount) || 0);
                     onlineCol += (parseFloat(s.onlineAmount) || 0);
                 } else onlineCol += amt;
@@ -44,8 +44,8 @@ async function initReports() {
         salesByDate[s.date] += amt;
         
         // Aggregate Qty for pie chart
-        qty500 += (parseInt(s.qty500) || 0);
-        qty1000 += (parseInt(s.qty1000) || 0);
+        sarees500 += (parseInt(s.sarees500) || 0);
+        sarees1000 += (parseInt(s.sarees1000) || 0);
     });
     
     document.getElementById('rep-today').textContent = utils.formatCurrency(todaySales);
@@ -53,10 +53,10 @@ async function initReports() {
     document.getElementById('rep-cash').textContent = utils.formatCurrency(cashCol);
     document.getElementById('rep-online').textContent = utils.formatCurrency(onlineCol);
     
-    renderCharts(salesByDate, qty500, qty1000);
+    renderCharts(salesByDate, sarees500, sarees1000);
 }
 
-function renderCharts(salesByDate, qty500, qty1000) {
+function renderCharts(salesByDate, sarees500, sarees1000) {
     // Prepare last 7 days data
     const labels = [];
     const data = [];
@@ -106,7 +106,7 @@ function renderCharts(salesByDate, qty500, qty1000) {
         data: {
             labels: ['₹500 Sarees', '₹1000 Sarees'],
             datasets: [{
-                data: [qty500, qty1000],
+                data: [sarees500, sarees1000],
                 backgroundColor: ['#4caf50', '#03a9f4'],
                 borderWidth: 0
             }]

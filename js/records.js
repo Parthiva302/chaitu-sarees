@@ -31,19 +31,19 @@ function renderTable(data) {
     }
     
     data.forEach((s, index) => {
-        const statusBadge = s.paymentStatus === 'Paid' ? 'bg-success' : 'bg-danger';
+        const statusBadge = s.status === 'Paid' ? 'bg-success' : 'bg-danger';
         const tr = document.createElement('tr');
         tr.innerHTML = `
-            <td><span class="fw-bold text-primary-custom">${s.invoiceNumber}</span></td>
+            <td><span class="fw-bold text-primary-custom">${s.invoice}</span></td>
             <td>${s.date}<br><small class="text-muted">${s.time}</small></td>
             <td>${s.customerName}<br><small class="text-muted">${s.phone}</small></td>
             <td>
-                <div><span class="badge bg-success me-1">500</span> x ${s.qty500}</div>
-                <div><span class="badge bg-info me-1">1000</span> x ${s.qty1000}</div>
+                <div><span class="badge bg-success me-1">500</span> x ${s.sarees500}</div>
+                <div><span class="badge bg-info me-1">1000</span> x ${s.sarees1000}</div>
             </td>
             <td class="fw-bold">₹${s.amount}</td>
-            <td>${s.paymentMethod}</td>
-            <td><span class="badge ${statusBadge}">${s.paymentStatus}</span></td>
+            <td>${s.payment}</td>
+            <td><span class="badge ${statusBadge}">${s.status}</span></td>
             <td class="text-end">
                 <button class="btn btn-sm btn-outline-primary me-1" onclick="viewRecord(${index})"><i class="fa-solid fa-eye"></i></button>
                 <button class="btn btn-sm btn-outline-danger"><i class="fa-solid fa-trash"></i></button>
@@ -69,7 +69,7 @@ function filterRecords() {
     
     const filtered = allRecords.filter(s => {
         let matchCust = s.customerName.toLowerCase().includes(searchCust) || s.phone.includes(searchCust);
-        let matchInv = s.invoiceNumber.toLowerCase().includes(searchInv);
+        let matchInv = s.invoice.toLowerCase().includes(searchInv);
         let matchDate = true;
         
         if (dateFilter === 'Today') {
@@ -93,7 +93,7 @@ function viewRecord(index) {
         <div class="row">
             <div class="col-6">
                 <p class="mb-1 text-muted">Invoice</p>
-                <h6 class="fw-bold">${s.invoiceNumber}</h6>
+                <h6 class="fw-bold">${s.invoice}</h6>
             </div>
             <div class="col-6 text-end">
                 <p class="mb-1 text-muted">Date & Time</p>
@@ -117,20 +117,20 @@ function viewRecord(index) {
                 <tr><th>Item</th><th>Qty</th><th>Amount</th></tr>
             </thead>
             <tbody>
-                <tr><td>₹500 Sarees</td><td>${s.qty500}</td><td>₹${s.qty500 * 500}</td></tr>
-                <tr><td>₹1000 Sarees</td><td>${s.qty1000}</td><td>₹${s.qty1000 * 1000}</td></tr>
+                <tr><td>₹500 Sarees</td><td>${s.sarees500}</td><td>₹${s.sarees500 * 500}</td></tr>
+                <tr><td>₹1000 Sarees</td><td>${s.sarees1000}</td><td>₹${s.sarees1000 * 1000}</td></tr>
                 <tr class="fw-bold"><td>Total</td><td>${s.totalSarees}</td><td>₹${s.amount}</td></tr>
             </tbody>
         </table>
         <div class="row mt-3">
             <div class="col-6">
                 <p class="mb-1 text-muted">Payment Method</p>
-                <h6 class="fw-bold">${s.paymentMethod}</h6>
-                ${s.paymentMethod === 'Mixed' ? `<small>Cash: ₹${s.cashAmount}, Online: ₹${s.onlineAmount}</small>` : ''}
+                <h6 class="fw-bold">${s.payment}</h6>
+                ${s.payment === 'Mixed' ? `<small>Cash: ₹${s.cashAmount}, Online: ₹${s.onlineAmount}</small>` : ''}
             </div>
             <div class="col-6 text-end">
                 <p class="mb-1 text-muted">Status</p>
-                <h6><span class="badge ${s.paymentStatus === 'Paid' ? 'bg-success' : 'bg-danger'}">${s.paymentStatus}</span></h6>
+                <h6><span class="badge ${s.status === 'Paid' ? 'bg-success' : 'bg-danger'}">${s.status}</span></h6>
             </div>
         </div>
         ${s.notes ? `<div class="mt-3"><p class="mb-1 text-muted">Notes</p><p>${s.notes}</p></div>` : ''}

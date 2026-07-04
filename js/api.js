@@ -22,7 +22,18 @@ const api = {
             const response = await fetch(`${API_URL}?action=getSales`);
             const data = await response.json();
             if (data.status === 'success') {
-                salesDataCache = data.data;
+                // Normalize data to ensure old schema matches new schema
+                salesDataCache = data.data.map(s => ({
+                    ...s,
+                    invoice: s.invoice || s.invoiceNumber || '',
+                    offer: s.offer || s.offerCategory || '',
+                    sarees500: s.sarees500 !== undefined ? s.sarees500 : (s.qty500 || 0),
+                    sarees1000: s.sarees1000 !== undefined ? s.sarees1000 : (s.qty1000 || 0),
+                    payment: s.payment || s.paymentMethod || '',
+                    status: s.status || s.paymentStatus || '',
+                    cashAmount: s.cashAmount || 0,
+                    onlineAmount: s.onlineAmount || 0
+                }));
                 return salesDataCache;
             }
             throw new Error(data.message);
@@ -79,16 +90,16 @@ const api = {
         // Generates some initial data for testing UI
         return [
             {
-                invoiceNumber: 'CS-20260705-001',
+                invoice: 'CS-20260705-001',
                 customerName: 'Rahul Kumar',
                 phone: '9876543210',
-                offerCategory: '₹500 Offer',
-                qty500: 2,
-                qty1000: 0,
+                offer: '₹500 Offer',
+                sarees500: 2,
+                sarees1000: 0,
                 totalSarees: 2,
                 amount: 1000,
-                paymentMethod: 'UPI',
-                paymentStatus: 'Paid',
+                payment: 'UPI',
+                status: 'Paid',
                 notes: '',
                 date: '2026-07-05',
                 time: '10:30 AM'

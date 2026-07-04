@@ -25,25 +25,25 @@ async function initDashboard() {
         uniqueCustomers.add(s.phone);
         
         // Sum Qty
-        const q500 = parseInt(s.qty500) || 0;
-        const q1000 = parseInt(s.qty1000) || 0;
+        const q500 = parseInt(s.sarees500) || 0;
+        const q1000 = parseInt(s.sarees1000) || 0;
         totalQty500 += q500;
         totalQty1000 += q1000;
         
         // Offer Customers count
-        if (s.offerCategory === '₹500 Offer') customers500++;
-        if (s.offerCategory === '₹1000 Offer') customers1000++;
+        if (s.offer === '₹500 Offer') customers500++;
+        if (s.offer === '₹1000 Offer') customers1000++;
 
         // Financials (only for today to match "Today's Sales", or you can adjust logic)
         if (s.date === today) {
             const amt = parseFloat(s.amount) || 0;
             todaySales += amt;
             
-            if (s.paymentStatus === 'Pending') {
+            if (s.status === 'Pending') {
                 pendingCol += amt;
             } else {
-                if (s.paymentMethod === 'Cash') cashCol += amt;
-                else if (s.paymentMethod === 'Mixed') {
+                if (s.payment === 'Cash') cashCol += amt;
+                else if (s.payment === 'Mixed') {
                     // If we had separate fields stored, we'd add them here.
                     // For simplicity, assuming mixed requires splitting logic stored in DB,
                     // or we just approximate. Let's assume standard behavior.
@@ -54,7 +54,7 @@ async function initDashboard() {
                 }
                 else cashCol += 0; // Other are online
                 
-                if (['PhonePe', 'Google Pay', 'Paytm', 'UPI', 'Debit Card', 'Credit Card', 'Bank Transfer'].includes(s.paymentMethod)) {
+                if (['PhonePe', 'Google Pay', 'Paytm', 'UPI', 'Debit Card', 'Credit Card', 'Bank Transfer'].includes(s.payment)) {
                     onlineCol += amt;
                 }
             }

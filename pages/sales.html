@@ -24,11 +24,11 @@
             <h5 class="fw-bold mb-3 text-muted border-bottom pb-2">Offer Category</h5>
             <div class="offer-selector">
                 <label class="offer-option selected">
-                    <input type="radio" name="offerCategory" value="₹500 Offer" checked>
+                    <input type="radio" name="offer" value="₹500 Offer" checked>
                     <h4>₹500 Offer</h4>
                 </label>
                 <label class="offer-option">
-                    <input type="radio" name="offerCategory" value="₹1000 Offer">
+                    <input type="radio" name="offer" value="₹1000 Offer">
                     <h4>₹1000 Offer</h4>
                 </label>
             </div>
@@ -39,20 +39,20 @@
             <div class="stepper-container shadow-sm">
                 <div class="stepper-label fs-5"><span class="badge bg-success me-2">₹500</span> Sarees</div>
                 <div class="stepper-controls">
-                    <button type="button" class="btn-stepper" onclick="updateQty('qty500', -1)"><i class="fa-solid fa-minus"></i></button>
-                    <span class="stepper-value" id="qty500-val">0</span>
-                    <input type="hidden" id="qty500" value="0">
-                    <button type="button" class="btn-stepper" onclick="updateQty('qty500', 1)"><i class="fa-solid fa-plus"></i></button>
+                    <button type="button" class="btn-stepper" onclick="updateQty('sarees500', -1)"><i class="fa-solid fa-minus"></i></button>
+                    <span class="stepper-value" id="sarees500-val">0</span>
+                    <input type="hidden" id="sarees500" value="0">
+                    <button type="button" class="btn-stepper" onclick="updateQty('sarees500', 1)"><i class="fa-solid fa-plus"></i></button>
                 </div>
             </div>
 
             <div class="stepper-container shadow-sm">
                 <div class="stepper-label fs-5"><span class="badge bg-info me-2">₹1000</span> Sarees</div>
                 <div class="stepper-controls">
-                    <button type="button" class="btn-stepper" style="background: #03a9f4;" onclick="updateQty('qty1000', -1)"><i class="fa-solid fa-minus"></i></button>
-                    <span class="stepper-value" id="qty1000-val">0</span>
-                    <input type="hidden" id="qty1000" value="0">
-                    <button type="button" class="btn-stepper" style="background: #03a9f4;" onclick="updateQty('qty1000', 1)"><i class="fa-solid fa-plus"></i></button>
+                    <button type="button" class="btn-stepper" style="background: #03a9f4;" onclick="updateQty('sarees1000', -1)"><i class="fa-solid fa-minus"></i></button>
+                    <span class="stepper-value" id="sarees1000-val">0</span>
+                    <input type="hidden" id="sarees1000" value="0">
+                    <button type="button" class="btn-stepper" style="background: #03a9f4;" onclick="updateQty('sarees1000', 1)"><i class="fa-solid fa-plus"></i></button>
                 </div>
             </div>
 
@@ -73,7 +73,7 @@
             <div class="row g-3 mb-4">
                 <div class="col-md-6">
                     <label class="form-label fw-bold">Payment Method <span class="text-danger">*</span></label>
-                    <select class="form-select form-select-lg" id="paymentMethod" required>
+                    <select class="form-select form-select-lg" id="payment" required>
                         <option value="" selected disabled>Select Method</option>
                         <option value="Cash">Cash</option>
                         <option value="PhonePe">PhonePe</option>
@@ -89,10 +89,10 @@
                 <div class="col-md-6">
                     <label class="form-label fw-bold">Payment Status <span class="text-danger">*</span></label>
                     <div class="status-toggle btn-group w-100" role="group">
-                        <input type="radio" class="btn-check" name="paymentStatus" id="statusPaid" value="Paid" autocomplete="off" checked>
+                        <input type="radio" class="btn-check" name="status" id="statusPaid" value="Paid" autocomplete="off" checked>
                         <label class="btn btn-outline-success border-2 fw-bold" for="statusPaid">Paid</label>
 
-                        <input type="radio" class="btn-check" name="paymentStatus" id="statusPending" value="Pending" autocomplete="off">
+                        <input type="radio" class="btn-check" name="status" id="statusPending" value="Pending" autocomplete="off">
                         <label class="btn btn-outline-danger border-2 fw-bold" for="statusPending">Pending</label>
                     </div>
                 </div>
