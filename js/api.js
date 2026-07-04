@@ -43,6 +43,25 @@ const api = {
                         else if (kl.includes('payment') && kl.includes('stat')) status = s[k];
                     });
 
+                    let dateVal = s.date || '';
+                    if (dateVal.includes('T')) {
+                        const d = new Date(dateVal);
+                        if (!isNaN(d.getTime())) {
+                            const year = d.getFullYear();
+                            const month = String(d.getMonth() + 1).padStart(2, '0');
+                            const day = String(d.getDate()).padStart(2, '0');
+                            dateVal = `${year}-${month}-${day}`;
+                        }
+                    }
+
+                    let timeVal = s.time || '';
+                    if (timeVal.includes('T')) {
+                        const d = new Date(timeVal);
+                        if (!isNaN(d.getTime())) {
+                            timeVal = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+                        }
+                    }
+
                     return {
                         ...s,
                         invoice,
@@ -51,10 +70,12 @@ const api = {
                         sarees1000: parseInt(sarees1000) || 0,
                         payment,
                         status,
+                        date: dateVal,
+                        time: timeVal,
                         cashAmount: s.cashAmount || 0,
                         onlineAmount: s.onlineAmount || 0
                     };
-                }).filter(s => !deletedInvoices.includes(s.invoice));
+                }).filter(s => s.invoice && s.invoice !== 'Invoice' && s.date !== 'Date' && !deletedInvoices.includes(s.invoice));
                 return salesDataCache;
             }
             throw new Error(data.message);

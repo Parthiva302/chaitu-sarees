@@ -34,29 +34,25 @@ async function initDashboard() {
         if (s.offer === '₹500 Offer') customers500++;
         if (s.offer === '₹1000 Offer') customers1000++;
 
-        // Financials (only for today to match "Today's Sales", or you can adjust logic)
+        // Financials (Today's Sales is today only; others are all-time)
+        const amt = parseFloat(s.amount) || 0;
         if (s.date === today) {
-            const amt = parseFloat(s.amount) || 0;
             todaySales += amt;
-            
-            if (s.status === 'Pending') {
-                pendingCol += amt;
+        }
+        
+        if (s.status === 'Pending') {
+            pendingCol += amt;
+        } else {
+            if (s.payment === 'Cash') {
+                cashCol += amt;
+            } else if (s.payment === 'Mixed') {
+                cashCol += (parseFloat(s.cashAmount) || 0);
+                onlineCol += (parseFloat(s.onlineAmount) || 0);
+            } else if (['PhonePe', 'Google Pay', 'Paytm', 'UPI', 'Debit Card', 'Credit Card', 'Bank Transfer'].includes(s.payment)) {
+                onlineCol += amt;
             } else {
-                if (s.payment === 'Cash') cashCol += amt;
-                else if (s.payment === 'Mixed') {
-                    // If we had separate fields stored, we'd add them here.
-                    // For simplicity, assuming mixed requires splitting logic stored in DB,
-                    // or we just approximate. Let's assume standard behavior.
-                    // Wait, the prompt asked to show Cash Amount and Online Amount for Mixed. 
-                    // Let's assume s.cashAmount and s.onlineAmount exist if mixed.
-                    cashCol += (parseFloat(s.cashAmount) || 0);
-                    onlineCol += (parseFloat(s.onlineAmount) || 0);
-                }
-                else cashCol += 0; // Other are online
-                
-                if (['PhonePe', 'Google Pay', 'Paytm', 'UPI', 'Debit Card', 'Credit Card', 'Bank Transfer'].includes(s.payment)) {
-                    onlineCol += amt;
-                }
+                // If not cash/mixed/online lists, default to online
+                onlineCol += amt;
             }
         }
     });
