@@ -1,7 +1,7 @@
 // api.js
 
 // Replace this with your Google Apps Script Web App URL
-const API_URL = "";
+const API_URL = "https://script.google.com/macros/s/AKfycbyEaVQkOQl_-vfWObwyZq8NLFe1qcymlpISOgG0jjWD1uE0Frko-Ld8RAyVpFiHTYpX/exec";
 
 // In-memory cache for immediate UI updates
 let salesDataCache = [];
@@ -45,11 +45,12 @@ const api = {
 
         try {
             const response = await fetch(API_URL, {
-                method: 'POST',
-                // Using no-cors or form data depends on the GAS setup. 
-                // For standard JSON fetch to GAS, text/plain is often needed to avoid CORS preflight issues, 
-                // but assuming a proper JSON setup here.
-                body: JSON.stringify({ action: 'addSale', data: saleObject })
+                method: "POST",
+                headers: {
+                    "Content-Type": "text/plain;charset=utf-8"
+                },
+                // Pass the data directly as requested by the user's Apps Script setup
+                body: JSON.stringify(saleObject)
             });
             
             const result = await response.json();
