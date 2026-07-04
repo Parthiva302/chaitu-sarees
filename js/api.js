@@ -23,8 +23,9 @@ const api = {
             const data = await response.json();
             if (data.status === 'success') {
                 const deletedInvoices = JSON.parse(localStorage.getItem('deletedInvoices') || '[]');
+                const localSalesBeforeFetch = [...salesDataCache];
                 // Normalize data to ensure old schema matches new schema
-                salesDataCache = data.data.map(s => {
+                const serverSales = data.data.map(s => {
                     const keys = Object.keys(s);
                     let invoice = s.invoice || '';
                     let offer = s.offer || '';
@@ -76,6 +77,12 @@ const api = {
                         onlineAmount: s.onlineAmount || 0
                     };
                 }).filter(s => s.invoice && s.invoice !== 'Invoice' && s.date !== 'Date' && !deletedInvoices.includes(s.invoice));
+
+                // Merge server records with locally added sales that haven't synced yet
+                const serverInvoiceSet = new Set(serverSales.map(s => s.invoice));
+                const localUnsyncedSales = localSalesBeforeFetch.filter(s => !serverInvoiceSet.has(s.invoice) && !deletedInvoices.includes(s.invoice));
+
+                salesDataCache = [...localUnsyncedSales, ...serverSales];
                 return salesDataCache;
             }
             throw new Error(data.message);
