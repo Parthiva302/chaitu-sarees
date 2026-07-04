@@ -45,7 +45,7 @@ function renderTable(data) {
             <td>${s.payment}</td>
             <td><span class="badge ${statusBadge}">${s.status}</span></td>
             <td class="text-end">
-                <button class="btn btn-sm btn-outline-primary me-1" onclick="viewRecord(${index})"><i class="fa-solid fa-eye"></i></button>
+                <button class="btn btn-sm btn-outline-primary me-1" onclick="viewRecord('${s.invoice}')"><i class="fa-solid fa-eye"></i></button>
                 <button class="btn btn-sm btn-outline-danger" onclick="deleteRecord('${s.invoice}')"><i class="fa-solid fa-trash"></i></button>
             </td>
         `;
@@ -86,8 +86,9 @@ function filterRecords() {
     renderTable(filtered);
 }
 
-function viewRecord(index) {
-    const s = allRecords[index];
+function viewRecord(invoice) {
+    const s = allRecords.find(r => r.invoice === invoice);
+    if (!s) return;
     const body = document.getElementById('recordDetailsBody');
     body.innerHTML = `
         <div class="row">
@@ -134,9 +135,23 @@ function viewRecord(index) {
             </div>
         </div>
         ${s.notes ? `<div class="mt-3"><p class="mb-1 text-muted">Notes</p><p>${s.notes}</p></div>` : ''}
+        <div class="row mt-4 border-top pt-3">
+            <div class="col-12 text-end">
+                <button type="button" class="btn btn-accent text-white" onclick="printInvoiceByInvoice('${s.invoice}')">
+                    <i class="fa-solid fa-print me-2"></i> Re-Print Receipt
+                </button>
+            </div>
+        </div>
     `;
     const modal = new bootstrap.Modal(document.getElementById('viewRecordModal'));
     modal.show();
+}
+
+function printInvoiceByInvoice(invoice) {
+    const s = allRecords.find(r => r.invoice === invoice);
+    if (s && typeof printInvoice === 'function') {
+        printInvoice(s);
+    }
 }
 
 function deleteRecord(invoice) {

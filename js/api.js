@@ -19,7 +19,7 @@ const api = {
         }
 
         try {
-            const response = await fetch(`${API_URL}?action=getSales`);
+            const response = await fetch(`${API_URL}?action=getSales&_=${Date.now()}`);
             const data = await response.json();
             if (data.status === 'success') {
                 const deletedInvoices = JSON.parse(localStorage.getItem('deletedInvoices') || '[]');
