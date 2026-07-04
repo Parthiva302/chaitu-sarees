@@ -33,40 +33,48 @@ const api = {
         }
     },
 
-    // Save a new sale
     async saveSale(saleObject) {
         // Optimistic UI update
         salesDataCache.unshift(saleObject);
-        
+
         if (!API_URL) {
-            console.log("Mock Save: ", saleObject);
-            return { status: 'success', message: 'Saved locally (No API URL)' };
+            console.log("Mock Save:", saleObject);
+            return {
+                success: true
+            };
         }
 
         try {
-            // Use FormData to avoid CORS preflights. The browser will automatically
-            // set Content-Type to multipart/form-data with the correct boundary.
+
             const formData = new FormData();
-            
-            // Append every field individually
-            for (const key in saleObject) {
-                if (saleObject.hasOwnProperty(key)) {
-                    formData.append(key, saleObject[key]);
-                }
-            }
+
+            Object.keys(saleObject).forEach(key => {
+                formData.append(key, saleObject[key]);
+            });
 
             const response = await fetch(API_URL, {
                 method: "POST",
                 body: formData
             });
-            
-            const responseText = await response.text();
-            const result = JSON.parse(responseText);
+
+            const text = await response.text();
+
+            console.log("Server Response:", text);
+
+            const result = JSON.parse(text);
+
+            if (!result.success) {
+                throw new Error(result.message || "Unknown Error");
+            }
+
             return result;
+
         } catch (error) {
-            console.error("Error saving sale:", error);
-            // Revert cache on fail
+
+            console.error(error);
+
             salesDataCache.shift();
+
             throw error;
         }
     },
