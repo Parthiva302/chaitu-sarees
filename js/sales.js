@@ -1,292 +1,321 @@
 // sales.js
 
-let currentInvoice = '';
+let _currentInvoice = '';
 
+// ── Page init ─────────────────────────────────────────────────
 function initSales() {
-    // Generate Invoice Number
-    // Get last invoice from cache if available
-    let lastInv = '';
-    if (salesDataCache.length > 0) {
-        lastInv = salesDataCache[0].invoice;
-    }
-    currentInvoice = utils.generateInvoice(lastInv);
-    document.getElementById('invoice-preview').textContent = '#' + currentInvoice;
+    // Generate next invoice from the full sales list
+    _currentInvoice = utils.generateInvoice(window.salesDataCache || []);
+    const preview = document.getElementById('invoice-preview');
+    if (preview) preview.textContent = '#' + _currentInvoice;
 
-    // Offer Selection Styling
-    const offerRadios = document.querySelectorAll('input[name="offer"]');
-    offerRadios.forEach(radio => {
-        radio.addEventListener('change', (e) => {
-            document.querySelectorAll('.offer-option').forEach(opt => opt.classList.remove('selected'));
-            e.target.closest('.offer-option').classList.add('selected');
-        });
+    // Offer option highlighting
+    document.querySelectorAll('input[name="offer"]').forEach(radio => {
+        radio.addEventListener('change', _onOfferChange);
     });
 
-    // Payment Method change event
-    const payment = document.getElementById('payment');
-    if (payment) {
-        payment.addEventListener('change', handlePaymentChange);
+    // Payment method dropdown
+    const paymentSel = document.getElementById('payment');
+    if (paymentSel) {
+        paymentSel.addEventListener('change', handlePaymentChange);
     }
-    
-    // Mixed Inputs calculation
-    document.getElementById('cashAmount').addEventListener('input', validateMixedAmounts);
-    document.getElementById('onlineAmount').addEventListener('input', validateMixedAmounts);
-}
 
-function updateQty(id, change) {
-    const input = document.getElementById(id);
-    const display = document.getElementById(`${id}-val`);
-    
-    let current = parseInt(input.value, 10);
-    let newVal = current + change;
-    
-    if (newVal < 0) newVal = 0;
-    
-    input.value = newVal;
-    display.textContent = newVal;
-    
+    // Mixed payment inputs
+    const cashAmt = document.getElementById('cashAmount');
+    const onlAmt  = document.getElementById('onlineAmount');
+    if (cashAmt) cashAmt.addEventListener('input', validateMixedAmounts);
+    if (onlAmt)  onlAmt.addEventListener('input',  validateMixedAmounts);
+
+    // Qty inputs - listen for direct edits
+    const q500Input = document.getElementById('sarees500');
+    const q1kInput  = document.getElementById('sarees1000');
+    if (q500Input) q500Input.addEventListener('input', calculateTotals);
+    if (q1kInput)  q1kInput.addEventListener('input',  calculateTotals);
+
     calculateTotals();
 }
 
-function calculateTotals() {
-    const q500 = utils.parseQty(document.getElementById('sarees500').value);
-    const q1000 = utils.parseQty(document.getElementById('sarees1000').value);
-    
-    const totalSarees = q500 + q1000;
-    const totalAmount = (q500 * 500) + (q1000 * 1000);
-    
-    document.getElementById('totalSareesDisplay').textContent = totalSarees;
-    document.getElementById('totalAmountDisplay').textContent = utils.formatCurrency(totalAmount);
-    
-    // Also trigger mixed amounts validation if visible
-    if (document.getElementById('payment').value === 'Mixed') {
-        validateMixedAmounts();
-    }
+// ── Offer styling ─────────────────────────────────────────────
+function _onOfferChange(e) {
+    document.querySelectorAll('.offer-option').forEach(opt => opt.classList.remove('selected'));
+    const opt = e.target.closest('.offer-option');
+    if (opt) opt.classList.add('selected');
 }
 
+// ── Qty stepper buttons ───────────────────────────────────────
+function updateQty(id, change) {
+    const input = document.getElementById(id);
+    if (!input) return;
+    let val = utils.parseQty(input.value) + change;
+    if (val < 0) val = 0;
+    input.value = val;
+    const display = document.getElementById(id + '-val');
+    if (display) display.textContent = val;
+    calculateTotals();
+}
+
+// ── Live total calculation ────────────────────────────────────
+function calculateTotals() {
+    const q500  = utils.parseQty(document.getElementById('sarees500')?.value);
+    const q1000 = utils.parseQty(document.getElementById('sarees1000')?.value);
+    const total = (q500 * 500) + (q1000 * 1000);
+
+    const totSareesEl = document.getElementById('totalSareesDisplay');
+    const totAmtEl    = document.getElementById('totalAmountDisplay');
+    if (totSareesEl) totSareesEl.textContent = q500 + q1000;
+    if (totAmtEl)    totAmtEl.textContent    = utils.formatCurrency(total);
+
+    if (document.getElementById('payment')?.value === 'Mixed') validateMixedAmounts();
+}
+
+// ── Mixed payment section toggle ──────────────────────────────
 function handlePaymentChange(e) {
-    const method = e.target.value;
+    const method   = e?.target?.value || document.getElementById('payment')?.value || '';
     const mixedDiv = document.getElementById('mixedPaymentDiv');
-    
+    if (!mixedDiv) return;
+
     if (method === 'Mixed') {
         mixedDiv.classList.remove('d-none');
     } else {
         mixedDiv.classList.add('d-none');
-        document.getElementById('cashAmount').value = '';
-        document.getElementById('onlineAmount').value = '';
-        document.getElementById('mixedErrorMsg').classList.add('d-none');
+        const ca = document.getElementById('cashAmount');
+        const oa = document.getElementById('onlineAmount');
+        if (ca) ca.value = '';
+        if (oa) oa.value = '';
+        const err = document.getElementById('mixedErrorMsg');
+        if (err) err.classList.add('d-none');
     }
 }
 
+// ── Validate mixed amounts ────────────────────────────────────
 function validateMixedAmounts() {
-    const method = document.getElementById('payment').value;
-    if (method !== 'Mixed') return true;
-    
-    const q500 = utils.parseQty(document.getElementById('sarees500').value);
-    const q1000 = utils.parseQty(document.getElementById('sarees1000').value);
-    const totalAmount = (q500 * 500) + (q1000 * 1000);
-    
-    const cash = parseFloat(document.getElementById('cashAmount').value) || 0;
-    const online = parseFloat(document.getElementById('onlineAmount').value) || 0;
-    
-    const errorMsg = document.getElementById('mixedErrorMsg');
-    
-    if ((cash + online) !== totalAmount) {
-        errorMsg.classList.remove('d-none');
+    if (document.getElementById('payment')?.value !== 'Mixed') return true;
+
+    const q500   = utils.parseQty(document.getElementById('sarees500')?.value);
+    const q1000  = utils.parseQty(document.getElementById('sarees1000')?.value);
+    const total  = (q500 * 500) + (q1000 * 1000);
+    const cash   = utils.parseAmount(document.getElementById('cashAmount')?.value);
+    const online = utils.parseAmount(document.getElementById('onlineAmount')?.value);
+    const err    = document.getElementById('mixedErrorMsg');
+
+    if (Math.abs(cash + online - total) > 0.01) {
+        if (err) err.classList.remove('d-none');
         return false;
-    } else {
-        errorMsg.classList.add('d-none');
-        return true;
     }
+    if (err) err.classList.add('d-none');
+    return true;
 }
 
+// ── Clear form ────────────────────────────────────────────────
 function clearForm() {
-    document.getElementById('newSaleForm').reset();
-    
-    document.getElementById('sarees500').value = 0;
-    document.getElementById('sarees500-val').textContent = 0;
-    document.getElementById('sarees1000').value = 0;
-    document.getElementById('sarees1000-val').textContent = 0;
-    
-    document.querySelectorAll('.offer-option').forEach(opt => opt.classList.remove('selected'));
-    document.querySelector('input[value="₹500 Offer"]').checked = true;
-    document.querySelector('input[value="₹500 Offer"]').closest('.offer-option').classList.add('selected');
-    
-    handlePaymentChange({target: {value: ''}});
+    const form = document.getElementById('newSaleForm');
+    if (form) form.reset();
+
+    // Reset qty displays
+    ['sarees500', 'sarees1000'].forEach(id => {
+        const inp = document.getElementById(id);
+        const disp = document.getElementById(id + '-val');
+        if (inp)  inp.value = 0;
+        if (disp) disp.textContent = 0;
+    });
+
+    // Reset offer selection visuals
+    document.querySelectorAll('.offer-option').forEach(o => o.classList.remove('selected'));
+    const def500 = document.querySelector('input[value="₹500 Offer"]');
+    if (def500) {
+        def500.checked = true;
+        const optEl = def500.closest('.offer-option');
+        if (optEl) optEl.classList.add('selected');
+    }
+
+    // Hide mixed payment section
+    handlePaymentChange({ target: { value: '' } });
     calculateTotals();
 }
 
+// ── Submit sale ───────────────────────────────────────────────
 async function submitSale(print = false) {
     const form = document.getElementById('newSaleForm');
-    
-    // Basic Validation
-    if (!form.checkValidity()) {
-        form.reportValidity();
-        return;
-    }
-    
-    const q500 = utils.parseQty(document.getElementById('sarees500').value);
-    const q1000 = utils.parseQty(document.getElementById('sarees1000').value);
-    const totalSarees = q500 + q1000;
-    const totalAmount = (q500 * 500) + (q1000 * 1000);
-    
-    if (totalSarees === 0) {
-        alert("Please add at least one saree.");
-        return;
-    }
-    
-    const method = document.getElementById('payment').value;
+    if (!form) return;
+
+    // HTML5 validation
+    if (!form.checkValidity()) { form.reportValidity(); return; }
+
+    const q500   = utils.parseQty(document.getElementById('sarees500')?.value);
+    const q1000  = utils.parseQty(document.getElementById('sarees1000')?.value);
+    const total  = q500 + q1000;
+    const amount = (q500 * 500) + (q1000 * 1000);
+
+    if (total === 0) { alert('Please add at least one saree.'); return; }
+
+    const method = document.getElementById('payment')?.value || '';
     if (method === 'Mixed' && !validateMixedAmounts()) {
-        alert("Cash and Online amounts do not add up to Total Amount.");
-        return;
+        alert('Cash and Online amounts must add up to the Total Amount.'); return;
     }
-    
+
+    const offerInput  = document.querySelector('input[name="offer"]:checked');
+    const statusInput = document.querySelector('input[name="status"]:checked');
+
     const saleData = {
-        invoice: currentInvoice,
-
-        customerName: document.getElementById('customerName').value,
-
-        phone: document.getElementById('customerPhone').value,
-
-        offer: document.querySelector('input[name="offer"]:checked').value,
-
-        sarees500: q500,
-
-        sarees1000: q1000,
-
-        totalSarees: totalSarees,
-
-        amount: totalAmount,
-
-        payment: method,
-
-        status: document.querySelector('input[name="status"]:checked').value,
-
-        notes: document.getElementById('notes').value,
-
-        date: utils.getCurrentDate(),
-
-        time: utils.getCurrentTime()
+        invoice:      _currentInvoice,
+        customerName: document.getElementById('customerName')?.value?.trim() || '',
+        phone:        document.getElementById('customerPhone')?.value?.trim() || '',
+        offer:        offerInput  ? offerInput.value  : '',
+        sarees500:    q500,
+        sarees1000:   q1000,
+        totalSarees:  total,
+        amount:       amount,
+        payment:      method,
+        cashAmount:   method === 'Mixed' ? utils.parseAmount(document.getElementById('cashAmount')?.value) : 0,
+        onlineAmount: method === 'Mixed' ? utils.parseAmount(document.getElementById('onlineAmount')?.value) : 0,
+        status:       statusInput ? statusInput.value : 'Paid',
+        notes:        document.getElementById('notes')?.value?.trim() || '',
+        date:         utils.getCurrentDate(),
+        time:         utils.getCurrentTime()
     };
-    
-    const buttons = document.querySelectorAll('#newSaleForm button');
+
+    // Disable buttons during save
+    const buttons = form.querySelectorAll('button');
+    const saveBtn = form.querySelector('.btn-primary-custom');
+    const originalHTML = saveBtn ? saveBtn.innerHTML : '';
+
+    buttons.forEach(b => b.disabled = true);
+    if (saveBtn) saveBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-2"></i>Saving...';
+
     try {
-        buttons.forEach(btn => btn.disabled = true);
-        const btnSave = document.querySelector('.btn-primary-custom');
-        const originalText = btnSave.innerHTML;
-        btnSave.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
-        
         await api.saveSale(saleData);
-        
-        utils.showToast("Sale Saved Successfully!");
-        
-        if (typeof refreshEntireApplication === 'function') {
-            await refreshEntireApplication();
-        }
-        
-        if (print) {
-            printInvoice(saleData);
-        }
-        
+        utils.showToast('✓ Sale saved successfully!', 'success');
+
+        if (print) printInvoice(saleData);
+
         clearForm();
-        initSales(); // Regenerate invoice number
-        
-    } catch (error) {
-        alert("Failed to save sale: " + error.message);
+
+        // Refresh global data and all UI panels
+        await refreshEntireApplication();
+
+        // Regenerate invoice number after refresh
+        _currentInvoice = utils.generateInvoice(window.salesDataCache || []);
+        const preview = document.getElementById('invoice-preview');
+        if (preview) preview.textContent = '#' + _currentInvoice;
+
+    } catch (err) {
+        utils.showToast('Failed to save: ' + err.message, 'danger');
+        console.error('submitSale error:', err);
     } finally {
-        buttons.forEach(btn => btn.disabled = false);
-        const btnSave = document.querySelector('.btn-primary-custom');
-        btnSave.innerHTML = '<i class="fa-solid fa-save me-2"></i> Save';
+        buttons.forEach(b => b.disabled = false);
+        if (saveBtn) saveBtn.innerHTML = originalHTML || '<i class="fa-solid fa-save me-2"></i>Save';
     }
 }
 
+// ── Print invoice ─────────────────────────────────────────────
 function printInvoice(data) {
-    // Generate Invoice HTML for printing
-    const printWindow = window.open('', '_blank');
-    
-    const html = `
-    <html>
-    <head>
-        <title>Invoice - ${data.invoice}</title>
-        <style>
-            body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; padding: 20px; color: #333; }
-            .header { text-align: center; border-bottom: 2px solid #7B002C; padding-bottom: 10px; margin-bottom: 20px; }
-            .header h1 { color: #7B002C; margin: 0; }
-            .header p { margin: 5px 0; font-size: 14px; }
-            .details { display: flex; justify-content: space-between; margin-bottom: 30px; }
-            table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
-            th, td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
-            th { background-color: #f8f9fa; }
-            .totals { text-align: right; font-size: 18px; font-weight: bold; margin-bottom: 30px; }
-            .footer { text-align: center; font-size: 12px; color: #777; margin-top: 50px; border-top: 1px solid #ddd; padding-top: 20px;}
-            @media print {
-                .no-print { display: none; }
-            }
-        </style>
-    </head>
-    <body onload="window.print(); window.close();">
-        <div class="no-print" style="text-align: right; margin-bottom: 20px;">
-            <button onclick="window.print()" style="padding: 10px 20px; background: #7B002C; color: white; border: none; cursor: pointer;">Print</button>
+    if (!data) return;
+    const inv    = data.invoice      || 'N/A';
+    const name   = data.customerName || '-';
+    const phone  = data.phone        || '-';
+    const offer  = data.offer        || '-';
+    const q500   = utils.parseQty(data.sarees500);
+    const q1000  = utils.parseQty(data.sarees1000);
+    const total  = utils.parseQty(data.totalSarees)  || (q500 + q1000);
+    const amount = utils.parseAmount(data.amount);
+    const date   = data.date         || '';
+    const time   = data.time         || '';
+    const method = data.payment      || '-';
+    const status = data.status       || '-';
+    const notes  = data.notes        || '';
+
+    const rows500  = q500  > 0 ? `<tr><td>₹500 Saree</td><td>${q500}</td><td>₹500</td><td>₹${q500 * 500}</td></tr>` : '';
+    const rows1000 = q1000 > 0 ? `<tr><td>₹1000 Saree</td><td>${q1000}</td><td>₹1000</td><td>₹${q1000 * 1000}</td></tr>` : '';
+
+    const mixedLine = method === 'Mixed'
+        ? `<br><small>Cash: ₹${data.cashAmount || 0} | Online: ₹${data.onlineAmount || 0}</small>` : '';
+
+    const notesLine = notes
+        ? `<div style="margin-top:15px;padding:10px;background:#f8f9fa;border-radius:6px">
+               <strong>Notes:</strong> ${notes}
+           </div>` : '';
+
+    const html = `<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Invoice ${inv} - Chaitu Sarees</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; padding: 30px; color: #222; max-width: 700px; margin: auto; }
+        .header { text-align: center; border-bottom: 3px solid #7B002C; padding-bottom: 15px; margin-bottom: 25px; }
+        .header h1 { color: #7B002C; margin: 0 0 5px; font-size: 28px; }
+        .header p { margin: 4px 0; color: #555; font-size: 13px; }
+        .info-row { display: flex; justify-content: space-between; margin-bottom: 25px; }
+        .info-col { flex: 1; }
+        .info-col.right { text-align: right; }
+        .info-col p { margin: 3px 0; font-size: 14px; }
+        .info-col strong { color: #7B002C; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        th { background: #7B002C; color: white; padding: 10px; text-align: left; }
+        td { padding: 9px 10px; border-bottom: 1px solid #eee; font-size: 14px; }
+        tr:nth-child(even) td { background: #fafafa; }
+        .total-row td { font-weight: bold; background: #fff3f6; font-size: 15px; }
+        .payment-box { border: 1px solid #ddd; border-radius: 6px; padding: 12px; display: flex; justify-content: space-between; margin-bottom: 20px; }
+        .grand-total { text-align: right; font-size: 22px; font-weight: bold; color: #7B002C; margin-bottom: 20px; }
+        .footer { text-align: center; font-size: 12px; color: #999; border-top: 1px solid #ddd; padding-top: 15px; margin-top: 20px; }
+        .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: bold; }
+        .badge-paid { background: #d4edda; color: #155724; }
+        .badge-pending { background: #f8d7da; color: #721c24; }
+        @media print { body { padding: 15px; } }
+    </style>
+</head>
+<body onload="window.print()">
+    <div class="header">
+        <h1>🏪 Chaitu Sarees</h1>
+        <p>123 Mega Shopping Mall, Hyderabad – 500001</p>
+        <p>📞 +91 9876543210 | chaitu.sarees@example.com</p>
+    </div>
+    <div class="info-row">
+        <div class="info-col">
+            <p><strong>Customer:</strong> ${name}</p>
+            <p><strong>Phone:</strong> ${phone}</p>
+            <p><strong>Offer:</strong> ${offer}</p>
         </div>
-        <div class="header">
-            <h1>Chaitu Sarees</h1>
-            <p>123 Mega Shopping Mall, Hyderabad, 500001</p>
-            <p>Phone: +91 9876543210</p>
+        <div class="info-col right">
+            <p><strong>Invoice:</strong> ${inv}</p>
+            <p><strong>Date:</strong> ${date}</p>
+            <p><strong>Time:</strong> ${time}</p>
         </div>
-        <div class="details">
-            <div>
-                <strong>Customer:</strong> ${data.customerName}<br>
-                <strong>Phone:</strong> ${data.phone}
-            </div>
-            <div style="text-align: right;">
-                <strong>Invoice:</strong> ${data.invoice}<br>
-                <strong>Date:</strong> ${data.date} ${data.time}<br>
-                <strong>Offer:</strong> ${data.offer}
-            </div>
+    </div>
+    <table>
+        <thead><tr><th>Item</th><th>Qty</th><th>Price</th><th>Amount</th></tr></thead>
+        <tbody>
+            ${rows500}
+            ${rows1000}
+            <tr class="total-row">
+                <td colspan="2"><strong>Total (${total} Sarees)</strong></td>
+                <td></td>
+                <td><strong>₹${amount}</strong></td>
+            </tr>
+        </tbody>
+    </table>
+    <div class="grand-total">Total Amount: ₹${amount}</div>
+    <div class="payment-box">
+        <div>
+            <strong>Payment:</strong> ${method}${mixedLine}<br>
+            <strong>Status:</strong> <span class="badge ${status === 'Paid' ? 'badge-paid' : 'badge-pending'}">${status}</span>
         </div>
-        <table>
-            <thead>
-                <tr>
-                    <th>Item</th>
-                    <th>Qty</th>
-                    <th>Price</th>
-                    <th>Amount</th>
-                </tr>
-            </thead>
-            <tbody>
-                ${data.sarees500 > 0 ? `
-                <tr>
-                    <td>₹500 Saree</td>
-                    <td>${data.sarees500}</td>
-                    <td>₹500</td>
-                    <td>₹${data.sarees500 * 500}</td>
-                </tr>` : ''}
-                ${data.sarees1000 > 0 ? `
-                <tr>
-                    <td>₹1000 Saree</td>
-                    <td>${data.sarees1000}</td>
-                    <td>₹1000</td>
-                    <td>₹${data.sarees1000 * 1000}</td>
-                </tr>` : ''}
-            </tbody>
-        </table>
-        <div class="totals">
-            <p>Total Sarees: ${data.totalSarees}</p>
-            <p>Total Amount: ₹${data.amount}</p>
-        </div>
-        <div class="details" style="border: 1px solid #ddd; padding: 10px;">
-            <div>
-                <strong>Payment Method:</strong> ${data.payment}<br>
-                <strong>Status:</strong> ${data.status}
-            </div>
-        </div>
-        <div class="footer">
-            <p>Thank you for shopping with Chaitu Sarees!</p>
-            <p>No Return, No Exchange on Offer Items.</p>
-        </div>
-    </body>
-    </html>
-    `;
-    
-    printWindow.document.write(html);
-    printWindow.document.close();
+        <div style="font-size:20px;font-weight:bold;color:#7B002C">₹${amount}</div>
+    </div>
+    ${notesLine}
+    <div class="footer">
+        <p>Thank you for shopping at <strong>Chaitu Sarees</strong>! 🙏</p>
+        <p>No return or exchange on offer items.</p>
+    </div>
+</body>
+</html>`;
+
+    const win = window.open('', '_blank');
+    if (win) {
+        win.document.write(html);
+        win.document.close();
+    } else {
+        alert('Pop-up blocked! Please allow pop-ups to print the invoice.');
+    }
 }

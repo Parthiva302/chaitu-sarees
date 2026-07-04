@@ -1,116 +1,133 @@
 // dashboard.js
 
-function updateDashboardUI(sales) {
-    if (!document.getElementById('dash-today-sales')) return;
-    
-    // Calculate Stats
-    let todaySales = 0;
-    let cashCol = 0;
-    let onlineCol = 0;
-    let pendingCol = 0;
-    let customers500 = 0;
-    let customers1000 = 0;
-    
-    let totalSarees500 = 0;
-    let totalSarees1000 = 0;
-    
+// ── Calculate stats from sales array ──────────────────────────
+function calcDashboardStats(sales) {
     const today = utils.getCurrentDate();
-    
-    const uniqueCustomers = new Set();
+
+    let todaySales  = 0;
+    let cashCol     = 0;
+    let onlineCol   = 0;
+    let pendingCol  = 0;
+    let customers500   = 0;
+    let customers1000  = 0;
+    let totalSarees500  = 0;
+    let totalSarees1000 = 0;
+    const uniquePhones = new Set();
+
+    const onlineMethods = ['PhonePe', 'Google Pay', 'Paytm', 'UPI',
+                           'Debit Card', 'Credit Card', 'Bank Transfer'];
 
     sales.forEach(s => {
-        if (s.phone) {
-            uniqueCustomers.add(s.phone);
-        }
-        
-        // Sum Qty
-        const q500 = parseInt(s.sarees500) || 0;
-        const q1000 = parseInt(s.sarees1000) || 0;
-        totalSarees500 += q500;
-        totalSarees1000 += q1000;
-        
-        // Offer Customers count
-        if (s.offer === '₹500 Offer') customers500++;
+        const amt = utils.parseAmount(s.amount);
+
+        // Unique customers
+        if (s.phone) uniquePhones.add(String(s.phone));
+
+        // Saree quantities
+        totalSarees500  += utils.parseQty(s.sarees500);
+        totalSarees1000 += utils.parseQty(s.sarees1000);
+
+        // Offer customer counts
+        if (s.offer === '₹500 Offer')  customers500++;
         if (s.offer === '₹1000 Offer') customers1000++;
 
-        // Financials (Today's Sales is today only; others are all-time)
-        const amt = parseFloat(s.amount) || 0;
-        if (s.date === today) {
-            todaySales += amt;
-        }
-        
+        // Today's sales
+        if (s.date === today) todaySales += amt;
+
+        // Payment breakdown (all-time)
         if (s.status === 'Pending') {
             pendingCol += amt;
-        } else {
+        } else if (s.status === 'Paid') {
             if (s.payment === 'Cash') {
                 cashCol += amt;
             } else if (s.payment === 'Mixed') {
-                cashCol += (parseFloat(s.cashAmount) || 0);
-                onlineCol += (parseFloat(s.onlineAmount) || 0);
-            } else if (['PhonePe', 'Google Pay', 'Paytm', 'UPI', 'Debit Card', 'Credit Card', 'Bank Transfer'].includes(s.payment)) {
+                cashCol   += utils.parseAmount(s.cashAmount);
+                onlineCol += utils.parseAmount(s.onlineAmount);
+            } else if (onlineMethods.includes(s.payment)) {
                 onlineCol += amt;
             } else {
-                // If not cash/mixed/online lists, default to online
+                // unknown payment type – count as online
                 onlineCol += amt;
             }
         }
     });
 
-    // Animate Numbers function
-    const animateValue = (id, start, end, duration, isCurrency = false) => {
-        const obj = document.getElementById(id);
-        if (!obj) return;
-        let startTimestamp = null;
-        const step = (timestamp) => {
-            if (!startTimestamp) startTimestamp = timestamp;
-            const progress = Math.min((timestamp - startTimestamp) / duration, 1);
-            const current = Math.floor(progress * (end - start) + start);
-            obj.innerHTML = isCurrency ? utils.formatCurrency(current) : current;
-            if (progress < 1) {
-                window.requestAnimationFrame(step);
-            }
-        };
-        window.requestAnimationFrame(step);
+    return {
+        todaySales,
+        cashCol,
+        onlineCol,
+        pendingCol,
+        customers500,
+        customers1000,
+        totalSarees500,
+        totalSarees1000,
+        totalSarees: totalSarees500 + totalSarees1000,
+        uniqueCustomers: uniquePhones.size,
+        totalBills: sales.length,
+        avgBill: sales.length > 0 ? Math.round(
+            sales.reduce((sum, s) => sum + utils.parseAmount(s.amount), 0) / sales.length
+        ) : 0
+    };
+}
+
+// ── Animate counter ────────────────────────────────────────────
+function animateCounter(id, end, isCurrency = false) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const start = 0;
+    const duration = 800;
+    let startTime = null;
+
+    function step(timestamp) {
+        if (!startTime) startTime = timestamp;
+        const progress = Math.min((timestamp - startTime) / duration, 1);
+        const val = Math.floor(progress * (end - start) + start);
+        el.textContent = isCurrency ? utils.formatCurrency(val) : val;
+        if (progress < 1) requestAnimationFrame(step);
+        else el.textContent = isCurrency ? utils.formatCurrency(end) : end;
     }
-
-    // Update UI
-    animateValue('dash-today-sales', 0, todaySales, 1000, true);
-    animateValue('dash-cash', 0, cashCol, 1000, true);
-    animateValue('dash-online', 0, onlineCol, 1000, true);
-    animateValue('dash-pending', 0, pendingCol, 1000, true);
-    
-    animateValue('dash-customers', 0, uniqueCustomers.size, 1000);
-    animateValue('dash-customers-500', 0, customers500, 1000);
-    animateValue('dash-customers-1000', 0, customers1000, 1000);
-    
-    animateValue('summary-qty-500', 0, totalSarees500, 1000);
-    animateValue('summary-qty-1000', 0, totalSarees1000, 1000);
-    animateValue('summary-qty-total', 0, totalSarees500 + totalSarees1000, 1000);
+    requestAnimationFrame(step);
 }
 
+// ── Update all dashboard DOM elements ─────────────────────────
+function updateDashboardUI(sales) {
+    if (!document.getElementById('dash-today-sales')) return; // not on dashboard page
+
+    const s = calcDashboardStats(sales);
+
+    animateCounter('dash-today-sales',    s.todaySales,   true);
+    animateCounter('dash-cash',           s.cashCol,      true);
+    animateCounter('dash-online',         s.onlineCol,    true);
+    animateCounter('dash-pending',        s.pendingCol,   true);
+
+    animateCounter('dash-customers',      s.uniqueCustomers);
+    animateCounter('dash-customers-500',  s.customers500);
+    animateCounter('dash-customers-1000', s.customers1000);
+
+    animateCounter('summary-qty-500',     s.totalSarees500);
+    animateCounter('summary-qty-1000',    s.totalSarees1000);
+    animateCounter('summary-qty-total',   s.totalSarees);
+}
+
+// ── Page init ─────────────────────────────────────────────────
 async function initDashboard() {
-    const sales = await api.getSales();
-    updateDashboardUI(sales);
+    updateDashboardUI(window.salesDataCache);   // show cached data instantly
+    const fresh = await api.getSales();
+    updateDashboardUI(fresh);
 }
 
+// ── Refresh button handler ─────────────────────────────────────
 async function refreshDashboard() {
-    const btn = document.querySelector('button.btn-outline-secondary');
-    let originalHTML = '';
+    const btn = document.querySelector('[onclick="refreshDashboard()"]');
     if (btn) {
-        originalHTML = btn.innerHTML;
         btn.disabled = true;
         btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Refreshing...';
     }
-    
-    if (typeof refreshEntireApplication === 'function') {
-        await refreshEntireApplication();
-    } else {
-        salesDataCache = [];
-        await initDashboard();
-    }
-    
+    // Force fresh fetch by clearing cache
+    window.salesDataCache = [];
+    await refreshEntireApplication();
     if (btn) {
         btn.disabled = false;
-        btn.innerHTML = originalHTML;
+        btn.innerHTML = '<i class="fa-solid fa-rotate-right"></i> Refresh';
     }
 }

@@ -1,68 +1,116 @@
 // payment.js
 
+// ── Called from refreshEntireApplication ──────────────────────
 function updatePaymentsUI(sales) {
     if (!document.getElementById('paymentBreakdownList')) return;
-    
-    const methods = {
-        'Cash': { amount: 0, icon: 'fa-money-bill-wave', color: 'text-success' },
-        'PhonePe': { amount: 0, icon: 'fa-mobile-screen', color: 'text-primary' },
-        'Google Pay': { amount: 0, icon: 'fa-google-pay', color: 'text-info' },
-        'Paytm': { amount: 0, icon: 'fa-mobile-screen', color: 'text-info' },
-        'UPI': { amount: 0, icon: 'fa-qrcode', color: 'text-primary' },
-        'Debit Card': { amount: 0, icon: 'fa-credit-card', color: 'text-secondary' },
-        'Credit Card': { amount: 0, icon: 'fa-credit-card', color: 'text-warning' },
-        'Bank Transfer': { amount: 0, icon: 'fa-building-columns', color: 'text-dark' }
+    _renderPayments(sales);
+}
+
+// ── Page init ─────────────────────────────────────────────────
+async function initPayments() {
+    _renderPayments(window.salesDataCache || []);
+    const fresh = await api.getSales();
+    _renderPayments(fresh);
+}
+
+// ── Core render logic ─────────────────────────────────────────
+function _renderPayments(sales) {
+    const methodDefs = {
+        'Cash':          { icon: 'fa-money-bill-wave',    color: 'text-success'   },
+        'PhonePe':       { icon: 'fa-mobile-screen',      color: 'text-primary'   },
+        'Google Pay':    { icon: 'fa-google',             color: 'text-info'      },
+        'Paytm':         { icon: 'fa-mobile-screen',      color: 'text-info'      },
+        'UPI':           { icon: 'fa-qrcode',             color: 'text-primary'   },
+        'Debit Card':    { icon: 'fa-credit-card',        color: 'text-secondary' },
+        'Credit Card':   { icon: 'fa-credit-card',        color: 'text-warning'   },
+        'Bank Transfer': { icon: 'fa-building-columns',   color: 'text-dark'      },
+        'Mixed':         { icon: 'fa-shuffle',            color: 'text-purple'    },
+        'Pending':       { icon: 'fa-clock',              color: 'text-danger'    },
+        'Other':         { icon: 'fa-circle-question',    color: 'text-muted'     },
     };
-    
-    let grandTotal = 0;
-    
+
+    // accumulate amounts per method
+    const totals = {};
+    let grandTotal   = 0;
+    let pendingTotal = 0;
+    let paidTotal    = 0;
+    let totalBills   = sales.length;
+    let paidBills    = 0;
+    let pendingBills = 0;
+
     sales.forEach(s => {
-        if (s.status === 'Paid') {
+        const amt = utils.parseAmount(s.amount);
+        if (s.status === 'Pending') {
+            pendingTotal += amt;
+            pendingBills++;
+            totals['Pending'] = (totals['Pending'] || 0) + amt;
+        } else if (s.status === 'Paid') {
+            paidTotal += amt;
+            paidBills++;
+            grandTotal += amt;
+
             if (s.payment === 'Mixed') {
-                methods['Cash'].amount += (parseFloat(s.cashAmount) || 0);
-                if (!methods['Mixed Online']) methods['Mixed Online'] = { amount: 0, icon: 'fa-globe', color: 'text-primary' };
-                methods['Mixed Online'].amount += (parseFloat(s.onlineAmount) || 0);
-                grandTotal += (parseFloat(s.cashAmount) || 0) + (parseFloat(s.onlineAmount) || 0);
+                const cash = utils.parseAmount(s.cashAmount);
+                const online = utils.parseAmount(s.onlineAmount);
+                totals['Cash'] = (totals['Cash'] || 0) + cash;
+                // Credit the online portion to Mixed bucket for clear display
+                totals['Mixed'] = (totals['Mixed'] || 0) + online;
             } else {
-                if (methods[s.payment]) {
-                    methods[s.payment].amount += parseFloat(s.amount);
-                    grandTotal += parseFloat(s.amount);
-                } else {
-                    if (!methods['Other']) methods['Other'] = { amount: 0, icon: 'fa-circle-question', color: 'text-muted' };
-                    methods['Other'].amount += parseFloat(s.amount);
-                    grandTotal += parseFloat(s.amount);
-                }
+                const key = methodDefs[s.payment] ? s.payment : 'Other';
+                totals[key] = (totals[key] || 0) + amt;
             }
         }
     });
-    
+
+    // Update summary cards
+    _setText('pay-grand-total',    utils.formatCurrency(grandTotal));
+    _setText('pay-pending',        utils.formatCurrency(pendingTotal));
+    _setText('pay-total-bills',    totalBills);
+    _setText('pay-paid-bills',     paidBills);
+    _setText('pay-pending-bills',  pendingBills);
+
+    // Render breakdown list
     const list = document.getElementById('paymentBreakdownList');
+    if (!list) return;
+
     list.innerHTML = '';
-    
-    for (const [key, val] of Object.entries(methods)) {
-        if (val.amount > 0) {
-            list.innerHTML += `
-                <div class="list-group-item d-flex justify-content-between align-items-center border-0 mb-2 rounded bg-light p-3">
-                    <div class="d-flex align-items-center">
-                        <div class="icon-box-sm bg-white rounded-circle shadow-sm d-flex justify-content-center align-items-center me-3" style="width: 40px; height: 40px;">
-                            <i class="fa-solid ${val.icon} ${val.color} fs-5"></i>
-                        </div>
-                        <span class="fw-bold fs-5">${key}</span>
+    const allKeys = [
+        ...Object.keys(methodDefs).filter(k => totals[k] > 0),
+        ...Object.keys(totals).filter(k => !methodDefs[k] && totals[k] > 0)
+    ];
+
+    if (allKeys.length === 0) {
+        list.innerHTML = '<div class="text-center py-5 text-muted">' +
+            '<i class="fa-solid fa-inbox fa-2x mb-3 d-block"></i>No payments recorded.</div>';
+        return;
+    }
+
+    allKeys.forEach(key => {
+        const amt  = totals[key] || 0;
+        if (amt <= 0) return;
+        const def  = methodDefs[key] || { icon: 'fa-circle-question', color: 'text-muted' };
+        const pct  = grandTotal + pendingTotal > 0
+            ? Math.round(amt / (grandTotal + pendingTotal) * 100) : 0;
+
+        list.innerHTML += `
+            <div class="list-group-item d-flex justify-content-between align-items-center border-0 mb-2 rounded bg-light p-3">
+                <div class="d-flex align-items-center">
+                    <div class="icon-box-sm bg-white rounded-circle shadow-sm d-flex justify-content-center align-items-center me-3"
+                         style="width:42px;height:42px;flex-shrink:0">
+                        <i class="fa-solid ${def.icon} ${def.color} fs-5"></i>
                     </div>
-                    <span class="fs-5 fw-bold">${utils.formatCurrency(val.amount)}</span>
+                    <div>
+                        <span class="fw-bold fs-6">${key}</span>
+                        <small class="text-muted d-block">${pct}% of total</small>
+                    </div>
                 </div>
-            `;
-        }
-    }
-    
-    if (list.innerHTML === '') {
-        list.innerHTML = '<div class="text-center py-4 text-muted">No payments recorded.</div>';
-    }
-    
-    document.getElementById('pay-grand-total').textContent = utils.formatCurrency(grandTotal);
+                <span class="fs-6 fw-bold text-dark">${utils.formatCurrency(amt)}</span>
+            </div>`;
+    });
 }
 
-async function initPayments() {
-    const sales = await api.getSales();
-    updatePaymentsUI(sales);
+// ── Helper ────────────────────────────────────────────────────
+function _setText(id, val) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = val;
 }

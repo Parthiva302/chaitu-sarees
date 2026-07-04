@@ -1,145 +1,147 @@
-// api.js
+// api.js - Single source of truth for all data
 
-// Replace this with your Google Apps Script Web App URL
 const API_URL = "https://script.google.com/macros/s/AKfycbxAtp6_h-TrIy4txzmUTB0kMw4GupekFPj2dkqHMggLltmd9Du20r6IGjNOU9fNttIO/exec";
 
-// In-memory cache for immediate UI updates
-let salesDataCache = [];
+// Global sales cache - single source of truth
+window.salesDataCache = [];
+
+// ─────────────────────────────────────────────────────────────
+// Normalize a single sale row from Google Sheets to our schema
+// ─────────────────────────────────────────────────────────────
+function normalizeSale(s) {
+    // Normalize date: Google Sheets returns ISO timestamp for Date cells
+    let dateVal = s.date || '';
+    if (dateVal.includes('T')) {
+        try {
+            const d = new Date(dateVal);
+            if (!isNaN(d.getTime())) {
+                // Use LOCAL date (browser timezone) to match utils.getCurrentDate()
+                dateVal = d.getFullYear() + '-' +
+                    String(d.getMonth() + 1).padStart(2, '0') + '-' +
+                    String(d.getDate()).padStart(2, '0');
+            }
+        } catch (e) { dateVal = ''; }
+    }
+
+    // Normalize time: Google Sheets returns 1899-12-29T... for Time cells
+    let timeVal = s.time || '';
+    if (timeVal.includes('T')) {
+        try {
+            const d = new Date(timeVal);
+            if (!isNaN(d.getTime())) {
+                // Use LOCAL hours/minutes (browser timezone)
+                const h = d.getHours();
+                const m = d.getMinutes();
+                const ampm = h >= 12 ? 'PM' : 'AM';
+                const h12 = h % 12 || 12;
+                timeVal = h12 + ':' + String(m).padStart(2, '0') + ' ' + ampm;
+            }
+        } catch (e) { timeVal = ''; }
+    }
+
+    return {
+        invoice:      String(s.invoice      || '').trim(),
+        customerName: String(s.customerName || '').trim(),
+        phone:        String(s.phone        || '').trim(),
+        offer:        String(s.offer        || '').trim(),
+        sarees500:    parseInt(s.sarees500)  || 0,
+        sarees1000:   parseInt(s.sarees1000) || 0,
+        totalSarees:  parseInt(s.totalSarees) || 0,
+        amount:       parseFloat(s.amount)   || 0,
+        payment:      String(s.payment      || '').trim(),
+        status:       String(s.status       || '').trim(),
+        notes:        String(s.notes        || '').trim(),
+        cashAmount:   parseFloat(s.cashAmount)   || 0,
+        onlineAmount: parseFloat(s.onlineAmount) || 0,
+        date:         dateVal,
+        time:         timeVal,
+    };
+}
+
+// ─────────────────────────────────────────────────────────────
+// Determine if a row is the spreadsheet header row or empty
+// ─────────────────────────────────────────────────────────────
+function isValidSaleRow(s) {
+    if (!s.invoice) return false;
+    if (s.invoice === 'Invoice' || s.date === 'Date') return false;
+    if (isNaN(s.amount) || s.amount < 0) return false;
+    return true;
+}
 
 const api = {
-    // Initialize or fetch initial data
+    // ── Fetch & refresh full list from server ──────────────────
     async getSales() {
         if (!API_URL) {
-            console.warn("API_URL is not set. Returning cached/dummy data.");
-            // Return dummy data if no API URL
-            if (salesDataCache.length === 0) {
-                salesDataCache = this.getDummyData();
+            if (window.salesDataCache.length === 0) {
+                window.salesDataCache = this.getDummyData();
             }
-            return salesDataCache;
+            return window.salesDataCache;
         }
 
         try {
-            const response = await fetch(`${API_URL}?action=getSales&_=${Date.now()}`);
-            const data = await response.json();
-            if (data.status === 'success') {
-                const deletedInvoices = JSON.parse(localStorage.getItem('deletedInvoices') || '[]');
-                const localSalesBeforeFetch = [...salesDataCache];
-                // Normalize data to ensure old schema matches new schema
-                const serverSales = data.data.map(s => {
-                    const keys = Object.keys(s);
-                    let invoice = s.invoice || '';
-                    let offer = s.offer || '';
-                    let sarees500 = s.sarees500 !== undefined ? s.sarees500 : 0;
-                    let sarees1000 = s.sarees1000 !== undefined ? s.sarees1000 : 0;
-                    let payment = s.payment || '';
-                    let status = s.status || '';
+            const deletedInvoices = JSON.parse(localStorage.getItem('deletedInvoices') || '[]');
+            const res = await fetch(`${API_URL}?action=getSales&_=${Date.now()}`);
+            const data = await res.json();
 
-                    keys.forEach(k => {
-                        const kl = k.toLowerCase();
-                        if (kl.includes('invoice') && kl.includes('num')) invoice = s[k];
-                        else if (kl.includes('offer') && kl.includes('cat')) offer = s[k];
-                        else if (kl.includes('qty') && kl.includes('500')) sarees500 = s[k];
-                        else if (kl.includes('qty') && kl.includes('1000')) sarees1000 = s[k];
-                        else if (kl.includes('payment') && kl.includes('meth')) payment = s[k];
-                        else if (kl.includes('payment') && kl.includes('stat')) status = s[k];
-                    });
+            if (data.status === 'success' && Array.isArray(data.data)) {
+                const serverSales = data.data
+                    .map(normalizeSale)
+                    .filter(s => isValidSaleRow(s) && !deletedInvoices.includes(s.invoice));
 
-                    let dateVal = s.date || '';
-                    if (dateVal.includes('T')) {
-                        const d = new Date(dateVal);
-                        if (!isNaN(d.getTime())) {
-                            const year = d.getFullYear();
-                            const month = String(d.getMonth() + 1).padStart(2, '0');
-                            const day = String(d.getDate()).padStart(2, '0');
-                            dateVal = `${year}-${month}-${day}`;
-                        }
-                    }
+                // Merge in any optimistically-added local sales not yet on server
+                const serverKeys = new Set(serverSales.map(s => s.invoice));
+                const localOnly = (window.salesDataCache || []).filter(
+                    s => !serverKeys.has(s.invoice) && !deletedInvoices.includes(s.invoice)
+                );
 
-                    let timeVal = s.time || '';
-                    if (timeVal.includes('T')) {
-                        const d = new Date(timeVal);
-                        if (!isNaN(d.getTime())) {
-                            timeVal = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
-                        }
-                    }
-
-                    return {
-                        ...s,
-                        invoice,
-                        offer,
-                        sarees500: parseInt(sarees500) || 0,
-                        sarees1000: parseInt(sarees1000) || 0,
-                        payment,
-                        status,
-                        date: dateVal,
-                        time: timeVal,
-                        cashAmount: s.cashAmount || 0,
-                        onlineAmount: s.onlineAmount || 0
-                    };
-                }).filter(s => s.invoice && s.invoice !== 'Invoice' && s.date !== 'Date' && !deletedInvoices.includes(s.invoice));
-
-                // Merge server records with locally added sales that haven't synced yet
-                const serverInvoiceSet = new Set(serverSales.map(s => s.invoice));
-                const localUnsyncedSales = localSalesBeforeFetch.filter(s => !serverInvoiceSet.has(s.invoice) && !deletedInvoices.includes(s.invoice));
-
-                salesDataCache = [...localUnsyncedSales, ...serverSales];
-                return salesDataCache;
+                window.salesDataCache = [...localOnly, ...serverSales];
+                return window.salesDataCache;
             }
-            throw new Error(data.message);
-        } catch (error) {
-            console.error("Error fetching sales:", error);
-            utils.showToast("Failed to fetch sales data.", "danger");
-            return salesDataCache;
+            throw new Error(data.message || 'API error');
+        } catch (err) {
+            console.error('getSales error:', err);
+            // Don't show toast here – let callers decide
+            return window.salesDataCache;
         }
     },
 
+    // ── Save a new sale ────────────────────────────────────────
     async saveSale(saleObject) {
-        // Optimistic UI update
-        salesDataCache.unshift(saleObject);
+        // Optimistic add to local cache immediately
+        window.salesDataCache.unshift(saleObject);
 
         if (!API_URL) {
-            console.log("Mock Save:", saleObject);
-            return {
-                success: true
-            };
+            return { success: true };
         }
 
         try {
-            const response = await fetch(API_URL, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "text/plain;charset=utf-8"
-                },
+            const res = await fetch(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                 body: JSON.stringify(saleObject)
             });
-
-            const text = await response.text();
-
-            console.log("Server Response:", text);
-
+            const text = await res.text();
             const result = JSON.parse(text);
-
-            if (!result.success) {
-                throw new Error(result.message || "Unknown Error");
-            }
-
+            if (!result.success) throw new Error(result.message || 'Save failed');
             return result;
-
-        } catch (error) {
-
-            console.error(error);
-
-            salesDataCache.shift();
-
-            throw error;
+        } catch (err) {
+            // Roll back optimistic add
+            window.salesDataCache = window.salesDataCache.filter(s => s.invoice !== saleObject.invoice);
+            throw err;
         }
     },
 
+    // ── Dummy data for offline testing ─────────────────────────
     getDummyData() {
-        // Generates some initial data for testing UI
+        const today = (() => {
+            const d = new Date();
+            return d.getFullYear() + '-' +
+                String(d.getMonth() + 1).padStart(2, '0') + '-' +
+                String(d.getDate()).padStart(2, '0');
+        })();
         return [
             {
-                invoice: 'CS-20260705-001',
+                invoice: 'CS-' + today.replace(/-/g, '') + '-001',
                 customerName: 'Rahul Kumar',
                 phone: '9876543210',
                 offer: '₹500 Offer',
@@ -150,7 +152,9 @@ const api = {
                 payment: 'UPI',
                 status: 'Paid',
                 notes: '',
-                date: '2026-07-05',
+                cashAmount: 0,
+                onlineAmount: 0,
+                date: today,
                 time: '10:30 AM'
             }
         ];
