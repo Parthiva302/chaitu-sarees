@@ -60,7 +60,8 @@ const api = {
                 body: formData
             });
             
-            const result = await response.json();
+            const responseText = await response.text();
+            const result = JSON.parse(responseText);
             return result;
         } catch (error) {
             console.error("Error saving sale:", error);
