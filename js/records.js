@@ -46,7 +46,7 @@ function renderTable(data) {
             <td><span class="badge ${statusBadge}">${s.status}</span></td>
             <td class="text-end">
                 <button class="btn btn-sm btn-outline-primary me-1" onclick="viewRecord(${index})"><i class="fa-solid fa-eye"></i></button>
-                <button class="btn btn-sm btn-outline-danger"><i class="fa-solid fa-trash"></i></button>
+                <button class="btn btn-sm btn-outline-danger" onclick="deleteRecord('${s.invoice}')"><i class="fa-solid fa-trash"></i></button>
             </td>
         `;
         tbody.appendChild(tr);
@@ -138,3 +138,20 @@ function viewRecord(index) {
     const modal = new bootstrap.Modal(document.getElementById('viewRecordModal'));
     modal.show();
 }
+
+function deleteRecord(invoice) {
+    if (confirm("Are you sure you want to delete this sale record?")) {
+        const deletedInvoices = JSON.parse(localStorage.getItem('deletedInvoices') || '[]');
+        deletedInvoices.push(invoice);
+        localStorage.setItem('deletedInvoices', JSON.stringify(deletedInvoices));
+        
+        // Remove from the global/cache array as well immediately
+        salesDataCache = salesDataCache.filter(s => s.invoice !== invoice);
+        allRecords = allRecords.filter(s => s.invoice !== invoice);
+        
+        // Re-render table and trigger filter to refresh UI
+        filterRecords();
+        utils.showToast("Record deleted successfully.", "success");
+    }
+}
+

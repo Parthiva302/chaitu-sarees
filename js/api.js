@@ -22,18 +22,39 @@ const api = {
             const response = await fetch(`${API_URL}?action=getSales`);
             const data = await response.json();
             if (data.status === 'success') {
+                const deletedInvoices = JSON.parse(localStorage.getItem('deletedInvoices') || '[]');
                 // Normalize data to ensure old schema matches new schema
-                salesDataCache = data.data.map(s => ({
-                    ...s,
-                    invoice: s.invoice || s.invoiceNumber || '',
-                    offer: s.offer || s.offerCategory || '',
-                    sarees500: s.sarees500 !== undefined ? s.sarees500 : (s.qty500 || 0),
-                    sarees1000: s.sarees1000 !== undefined ? s.sarees1000 : (s.qty1000 || 0),
-                    payment: s.payment || s.paymentMethod || '',
-                    status: s.status || s.paymentStatus || '',
-                    cashAmount: s.cashAmount || 0,
-                    onlineAmount: s.onlineAmount || 0
-                }));
+                salesDataCache = data.data.map(s => {
+                    const keys = Object.keys(s);
+                    let invoice = s.invoice || '';
+                    let offer = s.offer || '';
+                    let sarees500 = s.sarees500 !== undefined ? s.sarees500 : 0;
+                    let sarees1000 = s.sarees1000 !== undefined ? s.sarees1000 : 0;
+                    let payment = s.payment || '';
+                    let status = s.status || '';
+
+                    keys.forEach(k => {
+                        const kl = k.toLowerCase();
+                        if (kl.includes('invoice') && kl.includes('num')) invoice = s[k];
+                        else if (kl.includes('offer') && kl.includes('cat')) offer = s[k];
+                        else if (kl.includes('qty') && kl.includes('500')) sarees500 = s[k];
+                        else if (kl.includes('qty') && kl.includes('1000')) sarees1000 = s[k];
+                        else if (kl.includes('payment') && kl.includes('meth')) payment = s[k];
+                        else if (kl.includes('payment') && kl.includes('stat')) status = s[k];
+                    });
+
+                    return {
+                        ...s,
+                        invoice,
+                        offer,
+                        sarees500: parseInt(sarees500) || 0,
+                        sarees1000: parseInt(sarees1000) || 0,
+                        payment,
+                        status,
+                        cashAmount: s.cashAmount || 0,
+                        onlineAmount: s.onlineAmount || 0
+                    };
+                }).filter(s => !deletedInvoices.includes(s.invoice));
                 return salesDataCache;
             }
             throw new Error(data.message);

@@ -1,6 +1,6 @@
 // sales.js
 
-let currentInvoiceNumber = '';
+let currentInvoice = '';
 
 function initSales() {
     // Generate Invoice Number
@@ -9,8 +9,8 @@ function initSales() {
     if (salesDataCache.length > 0) {
         lastInv = salesDataCache[0].invoice;
     }
-    currentInvoiceNumber = utils.generateInvoiceNumber(lastInv);
-    document.getElementById('invoice-preview').textContent = '#' + currentInvoiceNumber;
+    currentInvoice = utils.generateInvoice(lastInv);
+    document.getElementById('invoice-preview').textContent = '#' + currentInvoice;
 
     // Offer Selection Styling
     const offerRadios = document.querySelectorAll('input[name="offer"]');
@@ -24,7 +24,7 @@ function initSales() {
     // Payment Method change event
     const payment = document.getElementById('payment');
     if (payment) {
-        payment.addEventListener('change', handlePaymentMethodChange);
+        payment.addEventListener('change', handlePaymentChange);
     }
     
     // Mixed Inputs calculation
@@ -63,7 +63,7 @@ function calculateTotals() {
     }
 }
 
-function handlePaymentMethodChange(e) {
+function handlePaymentChange(e) {
     const method = e.target.value;
     const mixedDiv = document.getElementById('mixedPaymentDiv');
     
@@ -111,7 +111,7 @@ function clearForm() {
     document.querySelector('input[value="₹500 Offer"]').checked = true;
     document.querySelector('input[value="₹500 Offer"]').closest('.offer-option').classList.add('selected');
     
-    handlePaymentMethodChange({target: {value: ''}});
+    handlePaymentChange({target: {value: ''}});
     calculateTotals();
 }
 
@@ -141,7 +141,7 @@ async function submitSale(print = false) {
     }
     
     const saleData = {
-        invoice: currentInvoiceNumber,
+        invoice: currentInvoice,
 
         customerName: document.getElementById('customerName').value,
 
@@ -168,11 +168,12 @@ async function submitSale(print = false) {
         time: utils.getCurrentTime()
     };
     
+    const buttons = document.querySelectorAll('#newSaleForm button');
     try {
+        buttons.forEach(btn => btn.disabled = true);
         const btnSave = document.querySelector('.btn-primary-custom');
         const originalText = btnSave.innerHTML;
         btnSave.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
-        btnSave.disabled = true;
         
         await api.saveSale(saleData);
         
@@ -188,9 +189,9 @@ async function submitSale(print = false) {
     } catch (error) {
         alert("Failed to save sale: " + error.message);
     } finally {
+        buttons.forEach(btn => btn.disabled = false);
         const btnSave = document.querySelector('.btn-primary-custom');
         btnSave.innerHTML = '<i class="fa-solid fa-save me-2"></i> Save';
-        btnSave.disabled = false;
     }
 }
 

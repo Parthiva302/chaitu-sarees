@@ -12,8 +12,8 @@ async function initDashboard() {
     let customers500 = 0;
     let customers1000 = 0;
     
-    let totalQty500 = 0;
-    let totalQty1000 = 0;
+    let totalSarees500 = 0;
+    let totalSarees1000 = 0;
     
     const today = utils.getCurrentDate();
     
@@ -27,8 +27,8 @@ async function initDashboard() {
         // Sum Qty
         const q500 = parseInt(s.sarees500) || 0;
         const q1000 = parseInt(s.sarees1000) || 0;
-        totalQty500 += q500;
-        totalQty1000 += q1000;
+        totalSarees500 += q500;
+        totalSarees1000 += q1000;
         
         // Offer Customers count
         if (s.offer === '₹500 Offer') customers500++;
@@ -88,7 +88,27 @@ async function initDashboard() {
     animateValue('dash-customers-500', 0, customers500, 1000);
     animateValue('dash-customers-1000', 0, customers1000, 1000);
     
-    animateValue('summary-qty-500', 0, totalQty500, 1000);
-    animateValue('summary-qty-1000', 0, totalQty1000, 1000);
-    animateValue('summary-qty-total', 0, totalQty500 + totalQty1000, 1000);
+    animateValue('summary-qty-500', 0, totalSarees500, 1000);
+    animateValue('summary-qty-1000', 0, totalSarees1000, 1000);
+    animateValue('summary-qty-total', 0, totalSarees500 + totalSarees1000, 1000);
 }
+
+async function refreshDashboard() {
+    const btn = document.querySelector('button.btn-outline-secondary');
+    let originalHTML = '';
+    if (btn) {
+        originalHTML = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Refreshing...';
+    }
+    
+    // Clear salesDataCache to fetch fresh data from server
+    salesDataCache = [];
+    await initDashboard();
+    
+    if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = originalHTML;
+    }
+}
+
