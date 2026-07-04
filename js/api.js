@@ -45,16 +45,12 @@ const api = {
         }
 
         try {
-
-            const formData = new FormData();
-
-            Object.keys(saleObject).forEach(key => {
-                formData.append(key, saleObject[key]);
-            });
-
             const response = await fetch(API_URL, {
                 method: "POST",
-                body: formData
+                headers: {
+                    "Content-Type": "text/plain;charset=utf-8"
+                },
+                body: JSON.stringify(saleObject)
             });
 
             const text = await response.text();
