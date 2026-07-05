@@ -3,68 +3,85 @@
 const API_URL = "https://script.google.com/macros/s/AKfycbxAtp6_h-TrIy4txzmUTB0kMw4GupekFPj2dkqHMggLltmd9Du20r6IGjNOU9fNttIO/exec";
 
 // Global sales cache - single source of truth
-window.salesDataCache = [];
+window.salesData = [];
 
-// ─────────────────────────────────────────────────────────────
-// Normalize a single sale row from Google Sheets to our schema
-// ─────────────────────────────────────────────────────────────
+// ── Normalize a single sale row from Google Sheets to our schema ───────────
 function normalizeSale(s) {
     // Normalize date: Google Sheets returns ISO timestamp for Date cells
     let dateVal = s.date || '';
-    if (dateVal.includes('T')) {
+    if (dateVal) {
         try {
             const d = new Date(dateVal);
             if (!isNaN(d.getTime())) {
-                // Use LOCAL date (browser timezone) to match utils.getCurrentDate()
-                dateVal = d.getFullYear() + '-' +
-                    String(d.getMonth() + 1).padStart(2, '0') + '-' +
-                    String(d.getDate()).padStart(2, '0');
+                dateVal = utils.formatKolkataDate(d);
+            } else {
+                dateVal = '';
             }
-        } catch (e) { dateVal = ''; }
+        } catch (e) {
+            dateVal = '';
+        }
     }
 
     // Normalize time: Google Sheets returns 1899-12-29T... for Time cells
     let timeVal = s.time || '';
-    if (timeVal.includes('T')) {
-        try {
-            const d = new Date(timeVal);
-            if (!isNaN(d.getTime())) {
-                // Use LOCAL hours/minutes (browser timezone)
-                const h = d.getHours();
-                const m = d.getMinutes();
-                const ampm = h >= 12 ? 'PM' : 'AM';
-                const h12 = h % 12 || 12;
-                timeVal = h12 + ':' + String(m).padStart(2, '0') + ' ' + ampm;
-            }
-        } catch (e) { timeVal = ''; }
+    if (typeof timeVal === 'string' && timeVal.trim() !== '') {
+        timeVal = timeVal.trim();
+        const match = timeVal.match(/^\d{1,2}:\d{2}\s*(AM|PM)$/i);
+        if (!match) {
+            try {
+                const d = timeVal.includes('T') ? new Date(timeVal) : new Date('1970-01-01T' + timeVal);
+                if (!isNaN(d.getTime())) {
+                    timeVal = d.toLocaleTimeString('en-US', {
+                        timeZone: 'Asia/Kolkata',
+                        hour: '2-digit', minute: '2-digit', hour12: true
+                    });
+                }
+            } catch (e) { }
+        }
     }
 
+    // Extract values supporting both new and old names
+    const invoice = String(s.invoice !== undefined ? s.invoice : (s.invoiceNumber !== undefined ? s.invoiceNumber : '')).trim();
+    const customerName = String(s.customerName || '').trim();
+    const phone = String(s.phone || '').trim();
+    const offer = String(s.offer !== undefined ? s.offer : (s.offerCategory !== undefined ? s.offerCategory : '')).trim();
+    
+    const sarees500 = parseInt(s.sarees500 !== undefined ? s.sarees500 : (s.qty500 !== undefined ? s.qty500 : 0)) || 0;
+    const sarees1000 = parseInt(s.sarees1000 !== undefined ? s.sarees1000 : (s.qty1000 !== undefined ? s.qty1000 : 0)) || 0;
+    const totalSarees = parseInt(s.totalSarees !== undefined ? s.totalSarees : (s.totalQty !== undefined ? s.totalQty : (sarees500 + sarees1000))) || (sarees500 + sarees1000);
+    const amount = parseFloat(s.amount !== undefined ? s.amount : (sarees500 * 500 + sarees1000 * 1000)) || (sarees500 * 500 + sarees1000 * 1000);
+    
+    const payment = String(s.payment !== undefined ? s.payment : (s.paymentMethod !== undefined ? s.paymentMethod : '')).trim();
+    const status = String(s.status !== undefined ? s.status : (s.paymentStatus !== undefined ? s.paymentStatus : '')).trim();
+    const notes = String(s.notes || '').trim();
+    const cashAmount = parseFloat(s.cashAmount) || 0;
+    const onlineAmount = parseFloat(s.onlineAmount) || 0;
+
     return {
-        invoice:      String(s.invoice      || '').trim(),
-        customerName: String(s.customerName || '').trim(),
-        phone:        String(s.phone        || '').trim(),
-        offer:        String(s.offer        || '').trim(),
-        sarees500:    parseInt(s.sarees500)  || 0,
-        sarees1000:   parseInt(s.sarees1000) || 0,
-        totalSarees:  parseInt(s.totalSarees) || 0,
-        amount:       parseFloat(s.amount)   || 0,
-        payment:      String(s.payment      || '').trim(),
-        status:       String(s.status       || '').trim(),
-        notes:        String(s.notes        || '').trim(),
-        cashAmount:   parseFloat(s.cashAmount)   || 0,
-        onlineAmount: parseFloat(s.onlineAmount) || 0,
-        date:         dateVal,
-        time:         timeVal,
+        invoice,
+        customerName,
+        phone,
+        offer,
+        sarees500,
+        sarees1000,
+        totalSarees,
+        amount,
+        payment,
+        status,
+        notes,
+        cashAmount,
+        onlineAmount,
+        date: dateVal,
+        time: timeVal,
     };
 }
 
-// ─────────────────────────────────────────────────────────────
-// Determine if a row is the spreadsheet header row or empty
-// ─────────────────────────────────────────────────────────────
+// ── Determine if a row is the spreadsheet header row or empty ──────────────
 function isValidSaleRow(s) {
     if (!s.invoice) return false;
-    if (s.invoice === 'Invoice' || s.date === 'Date') return false;
-    if (isNaN(s.amount) || s.amount < 0) return false;
+    if (s.invoice === 'Invoice' || s.invoice === 'Invoice Number' || s.date === 'Date') return false;
+    if (!s.customerName || !s.date) return false;
+    if (isNaN(s.amount) || s.amount <= 0) return false;
     return true;
 }
 
@@ -72,10 +89,10 @@ const api = {
     // ── Fetch & refresh full list from server ──────────────────
     async getSales() {
         if (!API_URL) {
-            if (window.salesDataCache.length === 0) {
-                window.salesDataCache = this.getDummyData();
+            if (window.salesData.length === 0) {
+                window.salesData = this.getDummyData();
             }
-            return window.salesDataCache;
+            return window.salesData;
         }
 
         try {
@@ -90,25 +107,25 @@ const api = {
 
                 // Merge in any optimistically-added local sales not yet on server
                 const serverKeys = new Set(serverSales.map(s => s.invoice));
-                const localOnly = (window.salesDataCache || []).filter(
+                const localOnly = (window.salesData || []).filter(
                     s => !serverKeys.has(s.invoice) && !deletedInvoices.includes(s.invoice)
                 );
 
-                window.salesDataCache = [...localOnly, ...serverSales];
-                return window.salesDataCache;
+                window.salesData = [...localOnly, ...serverSales];
+                return window.salesData;
             }
             throw new Error(data.message || 'API error');
         } catch (err) {
             console.error('getSales error:', err);
-            // Don't show toast here – let callers decide
-            return window.salesDataCache;
+            return window.salesData;
         }
     },
 
     // ── Save a new sale ────────────────────────────────────────
     async saveSale(saleObject) {
         // Optimistic add to local cache immediately
-        window.salesDataCache.unshift(saleObject);
+        if (!window.salesData) window.salesData = [];
+        window.salesData.unshift(saleObject);
 
         if (!API_URL) {
             return { success: true };
@@ -126,7 +143,43 @@ const api = {
             return result;
         } catch (err) {
             // Roll back optimistic add
-            window.salesDataCache = window.salesDataCache.filter(s => s.invoice !== saleObject.invoice);
+            window.salesData = window.salesData.filter(s => s.invoice !== saleObject.invoice);
+            throw err;
+        }
+    },
+
+    // ── Delete a sale ──────────────────────────────────────────
+    async deleteSale(invoice) {
+        if (!API_URL) {
+            return { success: true };
+        }
+
+        try {
+            // Try POST delete request
+            const res = await fetch(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify({ action: 'delete', invoice })
+            });
+            const text = await res.text();
+            const result = JSON.parse(text);
+            if (result.success || result.status === 'success') {
+                return result;
+            }
+        } catch (err) {
+            console.warn('deleteSale POST failed, trying GET fallback:', err);
+        }
+
+        // Try GET delete request fallback
+        try {
+            const res = await fetch(`${API_URL}?action=delete&invoice=${invoice}&_=${Date.now()}`);
+            const data = await res.json();
+            if (data.success || data.status === 'success') {
+                return data;
+            }
+            throw new Error(data.message || 'Delete fallback failed');
+        } catch (err) {
+            console.error('deleteSale GET fallback failed:', err);
             throw err;
         }
     },

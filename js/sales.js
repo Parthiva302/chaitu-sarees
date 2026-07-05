@@ -5,7 +5,7 @@ let _currentInvoice = '';
 // ── Page init ─────────────────────────────────────────────────
 function initSales() {
     // Generate next invoice from the full sales list
-    _currentInvoice = utils.generateInvoice(window.salesDataCache || []);
+    _currentInvoice = utils.generateInvoice(window.salesData || []);
     const preview = document.getElementById('invoice-preview');
     if (preview) preview.textContent = '#' + _currentInvoice;
 
@@ -194,7 +194,7 @@ async function submitSale(print = false) {
         await refreshEntireApplication();
 
         // Regenerate invoice number after refresh
-        _currentInvoice = utils.generateInvoice(window.salesDataCache || []);
+        _currentInvoice = utils.generateInvoice(window.salesData || []);
         const preview = document.getElementById('invoice-preview');
         if (preview) preview.textContent = '#' + _currentInvoice;
 

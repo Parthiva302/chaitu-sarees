@@ -8,9 +8,11 @@ function updatePaymentsUI(sales) {
 
 // ── Page init ─────────────────────────────────────────────────
 async function initPayments() {
-    _renderPayments(window.salesDataCache || []);
-    const fresh = await api.getSales();
-    _renderPayments(fresh);
+    if (!window.salesData || window.salesData.length === 0) {
+        await refreshEntireApplication();
+    } else {
+        _renderPayments(window.salesData);
+    }
 }
 
 // ── Core render logic ─────────────────────────────────────────
@@ -29,45 +31,17 @@ function _renderPayments(sales) {
         'Other':         { icon: 'fa-circle-question',    color: 'text-muted'     },
     };
 
-    // accumulate amounts per method
-    const totals = {};
-    let grandTotal   = 0;
-    let pendingTotal = 0;
-    let paidTotal    = 0;
-    let totalBills   = sales.length;
-    let paidBills    = 0;
-    let pendingBills = 0;
-
-    sales.forEach(s => {
-        const amt = utils.parseAmount(s.amount);
-        if (s.status === 'Pending') {
-            pendingTotal += amt;
-            pendingBills++;
-            totals['Pending'] = (totals['Pending'] || 0) + amt;
-        } else if (s.status === 'Paid') {
-            paidTotal += amt;
-            paidBills++;
-            grandTotal += amt;
-
-            if (s.payment === 'Mixed') {
-                const cash = utils.parseAmount(s.cashAmount);
-                const online = utils.parseAmount(s.onlineAmount);
-                totals['Cash'] = (totals['Cash'] || 0) + cash;
-                // Credit the online portion to Mixed bucket for clear display
-                totals['Mixed'] = (totals['Mixed'] || 0) + online;
-            } else {
-                const key = methodDefs[s.payment] ? s.payment : 'Other';
-                totals[key] = (totals[key] || 0) + amt;
-            }
-        }
-    });
+    const s = utils.calculateSalesStats(sales || []);
+    const totals = s.paymentTotals;
+    const paidTotal = s.cashAllTime + s.onlineAllTime;
+    const grandTotal = paidTotal; // Total collected
 
     // Update summary cards
     _setText('pay-grand-total',    utils.formatCurrency(grandTotal));
-    _setText('pay-pending',        utils.formatCurrency(pendingTotal));
-    _setText('pay-total-bills',    totalBills);
-    _setText('pay-paid-bills',     paidBills);
-    _setText('pay-pending-bills',  pendingBills);
+    _setText('pay-pending',        utils.formatCurrency(s.pendingAllTime));
+    _setText('pay-total-bills',    s.totalBills);
+    _setText('pay-paid-bills',     s.paidBills);
+    _setText('pay-pending-bills',  s.pendingBills);
 
     // Render breakdown list
     const list = document.getElementById('paymentBreakdownList');
@@ -89,8 +63,8 @@ function _renderPayments(sales) {
         const amt  = totals[key] || 0;
         if (amt <= 0) return;
         const def  = methodDefs[key] || { icon: 'fa-circle-question', color: 'text-muted' };
-        const pct  = grandTotal + pendingTotal > 0
-            ? Math.round(amt / (grandTotal + pendingTotal) * 100) : 0;
+        const pct  = grandTotal + s.pendingAllTime > 0
+            ? Math.round(amt / (grandTotal + s.pendingAllTime) * 100) : 0;
 
         list.innerHTML += `
             <div class="list-group-item d-flex justify-content-between align-items-center border-0 mb-2 rounded bg-light p-3">

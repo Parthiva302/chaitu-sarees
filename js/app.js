@@ -5,13 +5,14 @@
 // ─────────────────────────────────────────────────────────────────────────────
 async function refreshEntireApplication() {
     try {
-        await api.getSales(); // updates window.salesDataCache internally
+        const sales = await api.getSales();
+        window.salesData = sales;
 
-        // Update whichever page panels are currently in the DOM
-        if (typeof updateDashboardUI === 'function') updateDashboardUI(window.salesDataCache);
-        if (typeof updateReportsUI   === 'function') updateReportsUI(window.salesDataCache);
-        if (typeof updatePaymentsUI  === 'function') updatePaymentsUI(window.salesDataCache);
-        if (typeof updateRecordsUI   === 'function') updateRecordsUI(window.salesDataCache);
+        // Update whichever page panels are currently in the DOM using ONLY window.salesData
+        if (typeof updateDashboardUI === 'function') updateDashboardUI(window.salesData);
+        if (typeof updateReportsUI   === 'function') updateReportsUI(window.salesData);
+        if (typeof updatePaymentsUI  === 'function') updatePaymentsUI(window.salesData);
+        if (typeof updateRecordsUI   === 'function') updateRecordsUI(window.salesData);
     } catch (e) {
         console.error('refreshEntireApplication error:', e);
     }
@@ -133,10 +134,13 @@ const app = {
 // Bootstrap
 // ─────────────────────────────────────────────────────────────────────────────
 function initApp() {
-    window.salesDataCache = window.salesDataCache || [];
+    // Restore dark mode if saved
+    if (localStorage.getItem('theme') === 'dark') {
+        document.body.classList.add('dark-theme');
+    }
+    window.salesData = [];
     app.init();
-    // Preload data in background so all pages open instantly
-    api.getSales().catch(err => console.warn('Initial load error:', err));
+    refreshEntireApplication().catch(err => console.warn('Initial load error:', err));
 }
 
 document.addEventListener('DOMContentLoaded', initApp);

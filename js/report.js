@@ -11,71 +11,26 @@ function updateReportsUI(sales) {
 
 // ── Page init ─────────────────────────────────────────────────
 async function initReports() {
-    _renderReports(window.salesDataCache || []);
-    const fresh = await api.getSales();
-    _renderReports(fresh);
+    if (!window.salesData || window.salesData.length === 0) {
+        await refreshEntireApplication();
+    } else {
+        _renderReports(window.salesData);
+    }
 }
 
 // ── Core render logic ─────────────────────────────────────────
 function _renderReports(sales) {
-    const today = utils.getCurrentDate();
-    const month = utils.getCurrentMonth(); // YYYY-MM
-
-    const onlineMethods = ['PhonePe', 'Google Pay', 'Paytm', 'UPI',
-                           'Debit Card', 'Credit Card', 'Bank Transfer'];
-
-    let todaySales  = 0;
-    let monthlySales = 0;
-    let cashCol     = 0;
-    let onlineCol   = 0;
-    let sarees500   = 0;
-    let sarees1000  = 0;
-    const salesByDate = {};   // date -> total amount
-    const salesByMonth = {};  // YYYY-MM -> total amount
-
-    sales.forEach(s => {
-        const amt = utils.parseAmount(s.amount);
-
-        // Today
-        if (s.date === today) todaySales += amt;
-
-        // Current month
-        if (s.date && s.date.startsWith(month)) {
-            monthlySales += amt;
-
-            if (s.status === 'Paid') {
-                if (s.payment === 'Cash') {
-                    cashCol += amt;
-                } else if (s.payment === 'Mixed') {
-                    cashCol   += utils.parseAmount(s.cashAmount);
-                    onlineCol += utils.parseAmount(s.onlineAmount);
-                } else if (onlineMethods.includes(s.payment)) {
-                    onlineCol += amt;
-                }
-            }
-        }
-
-        // Charts - aggregate by date
-        if (s.date) {
-            salesByDate[s.date]  = (salesByDate[s.date]  || 0) + amt;
-            const m = s.date.substring(0, 7);
-            salesByMonth[m] = (salesByMonth[m] || 0) + amt;
-        }
-
-        // Saree counts
-        sarees500  += utils.parseQty(s.sarees500);
-        sarees1000 += utils.parseQty(s.sarees1000);
-    });
+    const s = utils.calculateSalesStats(sales || []);
 
     // Update stat cards
-    _setText('rep-today',   utils.formatCurrency(todaySales));
-    _setText('rep-monthly', utils.formatCurrency(monthlySales));
-    _setText('rep-cash',    utils.formatCurrency(cashCol));
-    _setText('rep-online',  utils.formatCurrency(onlineCol));
+    _setText('rep-today',   utils.formatCurrency(s.todaySales));
+    _setText('rep-monthly', utils.formatCurrency(s.monthlySales));
+    _setText('rep-cash',    utils.formatCurrency(s.cashMonthly));
+    _setText('rep-online',  utils.formatCurrency(s.onlineMonthly));
 
     // Render charts
-    _renderLineChart(salesByDate);
-    _renderDonutChart(sarees500, sarees1000);
+    _renderLineChart(s.salesByDate);
+    _renderDonutChart(s.sarees500, s.sarees1000);
 }
 
 // ── Helper ────────────────────────────────────────────────────
@@ -91,15 +46,19 @@ function _renderLineChart(salesByDate) {
 
     const labels = [];
     const data   = [];
+    const formatter = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' });
+
     for (let i = 6; i >= 0; i--) {
         const d = new Date();
         d.setDate(d.getDate() - i);
-        const dateStr = d.getFullYear() + '-' +
-            String(d.getMonth() + 1).padStart(2, '0') + '-' +
-            String(d.getDate()).padStart(2, '0');
-        labels.push(String(d.getDate()).padStart(2, '0') + '/' +
-            String(d.getMonth() + 1).padStart(2, '0'));
-        data.push(salesByDate[dateStr] || 0);
+        const dateStr = formatter.format(d); // "YYYY-MM-DD"
+        
+        // Extract day and month for label e.g., "DD/MM"
+        const parts = dateStr.split('-');
+        const label = parts[2] + '/' + parts[1];
+
+        labels.push(label);
+        data.push((salesByDate || {})[dateStr] || 0);
     }
 
     if (_lineChartInst) { _lineChartInst.destroy(); _lineChartInst = null; }

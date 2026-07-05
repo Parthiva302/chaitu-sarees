@@ -13,13 +13,12 @@ function updateRecordsUI(sales) {
 
 // ── Page init ─────────────────────────────────────────────────
 async function initRecords() {
-    // Render cached data instantly, then refresh
-    _allRecords = (window.salesDataCache || []).slice();
-    applyRecordFilters();
-
-    const fresh = await api.getSales();
-    _allRecords = fresh.slice();
-    applyRecordFilters();
+    if (!window.salesData || window.salesData.length === 0) {
+        await refreshEntireApplication();
+    } else {
+        _allRecords = (window.salesData || []).slice();
+        applyRecordFilters();
+    }
 
     // Bind filter controls once
     _bindRecordFilters();
@@ -207,6 +206,7 @@ function reprintInvoice(invoice) {
 async function deleteSaleRecord(invoice) {
     if (!confirm(`Delete invoice ${invoice}? This action cannot be undone.`)) return;
 
+    // Save to local blacklist immediately so it never reappears in this client
     const deleted = JSON.parse(localStorage.getItem('deletedInvoices') || '[]');
     if (!deleted.includes(invoice)) {
         deleted.push(invoice);
@@ -214,13 +214,61 @@ async function deleteSaleRecord(invoice) {
     }
 
     // Remove from local cache
-    window.salesDataCache = (window.salesDataCache || []).filter(s => s.invoice !== invoice);
+    window.salesData = (window.salesData || []).filter(s => s.invoice !== invoice);
 
-    utils.showToast('Record deleted.', 'success');
+    // Call actual delete API on Google Sheets in background/try-catch
+    try {
+        await api.deleteSale(invoice);
+        utils.showToast('✓ Record deleted.', 'success');
+    } catch (err) {
+        console.error('deleteSaleRecord API error:', err);
+        utils.showToast('Record deleted locally.', 'warning');
+    }
+
+    // Refresh application UI
     await refreshEntireApplication();
+}
+
+// ── Export to CSV ─────────────────────────────────────────────
+function exportSalesToCSV() {
+    const data = _filteredRecords.length > 0 ? _filteredRecords : _allRecords;
+    if (data.length === 0) {
+        utils.showToast('No records to export', 'warning');
+        return;
+    }
+    
+    let csv = 'Invoice,Date,Time,Customer Name,Phone,Offer,500 Qty,1000 Qty,Total Qty,Amount,Payment,Status,Notes\n';
+    data.forEach(s => {
+        const row = [
+            s.invoice,
+            s.date,
+            s.time,
+            `"${(s.customerName || '').replace(/"/g, '""')}"`,
+            s.phone,
+            s.offer,
+            s.sarees500,
+            s.sarees1000,
+            s.totalSarees,
+            s.amount,
+            s.payment,
+            s.status,
+            `"${(s.notes || '').replace(/"/g, '""')}"`
+        ];
+        csv += row.join(',') + '\n';
+    });
+    
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.setAttribute('download', `sales_records_${utils.getCurrentDate()}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    utils.showToast('Exported successfully!', 'success');
 }
 
 // Keep old names as aliases for backwards compatibility
 const filterRecords = applyRecordFilters;
 function viewRecord(inv)   { viewSaleRecord(inv); }
 function deleteRecord(inv) { deleteSaleRecord(inv); }
+const exportRecords = exportSalesToCSV;
