@@ -186,6 +186,57 @@ const api = {
                 onlineAmount: 0,
                 date: today,
                 time: '10:30 AM'
+            },
+            {
+                invoice: 'CS-20260705-001',
+                customerName: 'Gousie',
+                phone: '9182255783',
+                offer: '₹500 Offer',
+                sarees500: 2,
+                sarees1000: 0,
+                totalSarees: 2,
+                amount: 1000,
+                payment: 'PhonePe',
+                status: 'Paid',
+                notes: '',
+                cashAmount: 0,
+                onlineAmount: 1000,
+                date: '2026-07-05',
+                time: '10:46 AM'
+            },
+            {
+                invoice: 'CS-20260705-002',
+                customerName: 'Siva kumari',
+                phone: '8919784820',
+                offer: '₹1000 Offer',
+                sarees500: 0,
+                sarees1000: 2,
+                totalSarees: 2,
+                amount: 2000,
+                payment: 'Cash',
+                status: 'Paid',
+                notes: '',
+                cashAmount: 2000,
+                onlineAmount: 0,
+                date: '2026-07-05',
+                time: '10:47 AM'
+            },
+            {
+                invoice: 'CS-20260705-003',
+                customerName: 'Sureka',
+                phone: '8801013916',
+                offer: '₹500 Offer',
+                sarees500: 35,
+                sarees1000: 16,
+                totalSarees: 51,
+                amount: 33500,
+                payment: 'PhonePe',
+                status: 'Paid',
+                notes: '',
+                cashAmount: 0,
+                onlineAmount: 33500,
+                date: '2026-07-05',
+                time: '12:44 PM'
             }
         ];
     }
