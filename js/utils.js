@@ -112,6 +112,34 @@ const utils = {
         return isNaN(n) || n < 0 ? 0 : n;
     },
 
+    normalizeDateKey(value) {
+        if (!value) return '';
+
+        if (typeof value === 'string') {
+            const trimmed = value.trim();
+            if (!trimmed) return '';
+
+            const datePart = trimmed.split('T')[0].split(' ')[0];
+            if (/^\d{4}-\d{2}-\d{2}$/.test(datePart)) {
+                return datePart;
+            }
+
+            const parsed = new Date(trimmed);
+            if (!isNaN(parsed.getTime())) {
+                return this.formatKolkataDate(parsed);
+            }
+
+            return '';
+        }
+
+        if (value instanceof Date) {
+            return this.formatKolkataDate(value);
+        }
+
+        const parsed = new Date(value);
+        return isNaN(parsed.getTime()) ? '' : this.formatKolkataDate(parsed);
+    },
+
     getSalesData(sales) {
         return Array.isArray(sales) ? sales : (window.salesData || []);
     },
@@ -177,6 +205,7 @@ const utils = {
             const cashAmount = this.parseAmount(s.cashAmount);
             const onlineAmount = this.parseAmount(s.onlineAmount);
             const payment = String(s.payment || '').trim();
+            const saleDate = this.normalizeDateKey(s.date);
 
             analytics.totalRevenue += amount;
 
@@ -188,14 +217,14 @@ const utils = {
             if (s.offer === '₹500 Offer') analytics.customers500++;
             if (s.offer === '₹1000 Offer') analytics.customers1000++;
 
-            if (s.date) {
-                analytics.salesByDate[s.date] = (analytics.salesByDate[s.date] || 0) + amount;
-                const saleMonth = s.date.substring(0, 7);
+            if (saleDate) {
+                analytics.salesByDate[saleDate] = (analytics.salesByDate[saleDate] || 0) + amount;
+                const saleMonth = saleDate.substring(0, 7);
                 analytics.salesByMonth[saleMonth] = (analytics.salesByMonth[saleMonth] || 0) + amount;
             }
 
-            if (s.date === today) analytics.todaySales += amount;
-            if (s.date && s.date.startsWith(month)) analytics.monthlySales += amount;
+            if (saleDate === today) analytics.todaySales += amount;
+            if (saleDate && saleDate.startsWith(month)) analytics.monthlySales += amount;
 
             if (isPending) {
                 analytics.pendingAllTime += amount;
@@ -213,7 +242,7 @@ const utils = {
 
             if (payment === 'Cash') {
                 analytics.cashAllTime += amount;
-                if (s.date && s.date.startsWith(month)) analytics.cashMonthly += amount;
+                if (saleDate && saleDate.startsWith(month)) analytics.cashMonthly += amount;
                 analytics.paymentTotals.Cash += amount;
                 return;
             }
@@ -221,7 +250,7 @@ const utils = {
             if (payment === 'Mixed') {
                 analytics.cashAllTime += cashAmount;
                 analytics.onlineAllTime += onlineAmount;
-                if (s.date && s.date.startsWith(month)) {
+                if (saleDate && saleDate.startsWith(month)) {
                     analytics.cashMonthly += cashAmount;
                     analytics.onlineMonthly += onlineAmount;
                 }
@@ -233,13 +262,13 @@ const utils = {
 
             if (onlineMethods.has(payment)) {
                 analytics.onlineAllTime += amount;
-                if (s.date && s.date.startsWith(month)) analytics.onlineMonthly += amount;
+                if (saleDate && saleDate.startsWith(month)) analytics.onlineMonthly += amount;
                 analytics.paymentTotals[payment] += amount;
                 return;
             }
 
             analytics.onlineAllTime += amount;
-            if (s.date && s.date.startsWith(month)) analytics.onlineMonthly += amount;
+            if (saleDate && saleDate.startsWith(month)) analytics.onlineMonthly += amount;
             analytics.paymentTotals.Other += amount;
         });
 

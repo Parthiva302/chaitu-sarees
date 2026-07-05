@@ -11,12 +11,7 @@ function normalizeSale(s) {
     let dateVal = s.date || '';
     if (dateVal) {
         try {
-            const d = new Date(dateVal);
-            if (!isNaN(d.getTime())) {
-                dateVal = utils.formatKolkataDate(d);
-            } else {
-                dateVal = '';
-            }
+            dateVal = utils.normalizeDateKey(dateVal);
         } catch (e) {
             dateVal = '';
         }
