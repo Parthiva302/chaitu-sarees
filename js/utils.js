@@ -112,156 +112,230 @@ const utils = {
         return isNaN(n) || n < 0 ? 0 : n;
     },
 
-    // ── Centralized Sales Stats Calculation ────────────────────
-    calculateSalesStats(sales) {
+    getSalesData(sales) {
+        return Array.isArray(sales) ? sales : (window.salesData || []);
+    },
+
+    buildSalesAnalytics(sales) {
+        const list = this.getSalesData(sales);
         const today = this.getCurrentDate();
-        const month = this.getCurrentMonth(); // YYYY-MM
+        const month = this.getCurrentMonth();
 
-        let todaySales = 0;
-        let monthlySales = 0;
-        
-        let cashAllTime = 0;
-        let onlineAllTime = 0;
-        let pendingAllTime = 0;
-        
-        let cashMonthly = 0;
-        let onlineMonthly = 0;
-        
-        let sarees500 = 0;
-        let sarees1000 = 0;
-        let totalSarees = 0;
-        
-        let customers500 = 0;
-        let customers1000 = 0;
-        const uniquePhones = new Set();
-        
-        let totalBills = sales.length;
-        let paidBills = 0;
-        let pendingBills = 0;
-
-        const onlineMethods = ['PhonePe', 'Google Pay', 'Paytm', 'UPI',
-                               'Debit Card', 'Credit Card', 'Bank Transfer'];
-
-        const paymentTotals = {
-            'Cash': 0,
-            'PhonePe': 0,
-            'Google Pay': 0,
-            'Paytm': 0,
-            'UPI': 0,
-            'Debit Card': 0,
-            'Credit Card': 0,
-            'Bank Transfer': 0,
-            'Mixed': 0,
-            'Pending': 0,
-            'Other': 0
+        const analytics = {
+            todaySales: 0,
+            monthlySales: 0,
+            totalRevenue: 0,
+            cashAllTime: 0,
+            onlineAllTime: 0,
+            pendingAllTime: 0,
+            cashMonthly: 0,
+            onlineMonthly: 0,
+            sarees500: 0,
+            sarees1000: 0,
+            totalSarees: 0,
+            customers500: 0,
+            customers1000: 0,
+            uniqueCustomers: 0,
+            totalBills: list.length,
+            paidBills: 0,
+            pendingBills: 0,
+            avgBill: 0,
+            paymentTotals: {
+                Cash: 0,
+                PhonePe: 0,
+                'Google Pay': 0,
+                Paytm: 0,
+                UPI: 0,
+                'Debit Card': 0,
+                'Credit Card': 0,
+                'Bank Transfer': 0,
+                Mixed: 0,
+                Pending: 0,
+                Other: 0
+            },
+            salesByDate: {},
+            salesByMonth: {}
         };
 
-        const salesByDate = {};   // date -> total amount
-        const salesByMonth = {};  // YYYY-MM -> total amount
+        const uniquePhones = new Set();
+        const onlineMethods = new Set([
+            'PhonePe',
+            'Google Pay',
+            'Paytm',
+            'UPI',
+            'Debit Card',
+            'Credit Card',
+            'Bank Transfer'
+        ]);
 
-        (sales || []).forEach(s => {
-            const amt = this.parseAmount(s.amount);
+        list.forEach(s => {
+            const amount = this.parseAmount(s.amount);
             const isPaid = s.status === 'Paid';
             const isPending = s.status === 'Pending';
-            
-            // Unique customers
-            if (s.phone) uniquePhones.add(String(s.phone));
-
-            // Saree quantities
             const q500 = this.parseQty(s.sarees500);
             const q1000 = this.parseQty(s.sarees1000);
-            sarees500 += q500;
-            sarees1000 += q1000;
-            totalSarees += (q500 + q1000);
+            const cashAmount = this.parseAmount(s.cashAmount);
+            const onlineAmount = this.parseAmount(s.onlineAmount);
+            const payment = String(s.payment || '').trim();
 
-            // Offer customer counts
-            if (s.offer === '₹500 Offer') customers500++;
-            if (s.offer === '₹1000 Offer') customers1000++;
+            analytics.totalRevenue += amount;
 
-            // Sales by date/month (all statuses)
+            if (s.phone) uniquePhones.add(String(s.phone));
+            analytics.sarees500 += q500;
+            analytics.sarees1000 += q1000;
+            analytics.totalSarees += q500 + q1000;
+
+            if (s.offer === '₹500 Offer') analytics.customers500++;
+            if (s.offer === '₹1000 Offer') analytics.customers1000++;
+
             if (s.date) {
-                salesByDate[s.date] = (salesByDate[s.date] || 0) + amt;
-                const m = s.date.substring(0, 7);
-                salesByMonth[m] = (salesByMonth[m] || 0) + amt;
+                analytics.salesByDate[s.date] = (analytics.salesByDate[s.date] || 0) + amount;
+                const saleMonth = s.date.substring(0, 7);
+                analytics.salesByMonth[saleMonth] = (analytics.salesByMonth[saleMonth] || 0) + amount;
             }
 
-            // Today's Sales
-            if (s.date === today) {
-                todaySales += amt;
-            }
+            if (s.date === today) analytics.todaySales += amount;
+            if (s.date && s.date.startsWith(month)) analytics.monthlySales += amount;
 
-            // Monthly Sales
-            if (s.date && s.date.startsWith(month)) {
-                monthlySales += amt;
-            }
-
-            // Payment & Bill calculations
             if (isPending) {
-                pendingAllTime += amt;
-                pendingBills++;
-                paymentTotals['Pending'] = (paymentTotals['Pending'] || 0) + amt;
-            } else if (isPaid) {
-                paidBills++;
-                
-                // All-Time Payment Breakdown
-                if (s.payment === 'Cash') {
-                    cashAllTime += amt;
-                    paymentTotals['Cash'] = (paymentTotals['Cash'] || 0) + amt;
-                } else if (s.payment === 'Mixed') {
-                    const cashAmt = this.parseAmount(s.cashAmount);
-                    const onlineAmt = this.parseAmount(s.onlineAmount);
-                    cashAllTime += cashAmt;
-                    onlineAllTime += onlineAmt;
-                    paymentTotals['Cash'] = (paymentTotals['Cash'] || 0) + cashAmt;
-                    paymentTotals['Mixed'] = (paymentTotals['Mixed'] || 0) + onlineAmt;
-                } else if (onlineMethods.includes(s.payment)) {
-                    onlineAllTime += amt;
-                    paymentTotals[s.payment] = (paymentTotals[s.payment] || 0) + amt;
-                } else {
-                    onlineAllTime += amt;
-                    paymentTotals['Other'] = (paymentTotals['Other'] || 0) + amt;
-                }
-
-                // Monthly Collection Breakdown
-                if (s.date && s.date.startsWith(month)) {
-                    if (s.payment === 'Cash') {
-                        cashMonthly += amt;
-                    } else if (s.payment === 'Mixed') {
-                        cashMonthly += this.parseAmount(s.cashAmount);
-                        onlineMonthly += this.parseAmount(s.onlineAmount);
-                    } else if (onlineMethods.includes(s.payment)) {
-                        onlineMonthly += amt;
-                    } else {
-                        onlineMonthly += amt;
-                    }
-                }
+                analytics.pendingAllTime += amount;
+                analytics.pendingBills++;
+                analytics.paymentTotals.Pending += amount;
+                return;
             }
+
+            if (!isPaid) {
+                analytics.paymentTotals.Other += amount;
+                return;
+            }
+
+            analytics.paidBills++;
+
+            if (payment === 'Cash') {
+                analytics.cashAllTime += amount;
+                if (s.date && s.date.startsWith(month)) analytics.cashMonthly += amount;
+                analytics.paymentTotals.Cash += amount;
+                return;
+            }
+
+            if (payment === 'Mixed') {
+                analytics.cashAllTime += cashAmount;
+                analytics.onlineAllTime += onlineAmount;
+                if (s.date && s.date.startsWith(month)) {
+                    analytics.cashMonthly += cashAmount;
+                    analytics.onlineMonthly += onlineAmount;
+                }
+                analytics.paymentTotals.Cash += cashAmount;
+                analytics.paymentTotals['Google Pay'] += onlineAmount;
+                analytics.paymentTotals.Mixed += cashAmount + onlineAmount;
+                return;
+            }
+
+            if (onlineMethods.has(payment)) {
+                analytics.onlineAllTime += amount;
+                if (s.date && s.date.startsWith(month)) analytics.onlineMonthly += amount;
+                analytics.paymentTotals[payment] += amount;
+                return;
+            }
+
+            analytics.onlineAllTime += amount;
+            if (s.date && s.date.startsWith(month)) analytics.onlineMonthly += amount;
+            analytics.paymentTotals.Other += amount;
         });
 
-        const totalRevenue = (sales || []).reduce((sum, s) => sum + this.parseAmount(s.amount), 0);
-        const avgBill = (sales || []).length > 0 ? Math.round(totalRevenue / sales.length) : 0;
+        analytics.uniqueCustomers = uniquePhones.size;
+        analytics.avgBill = list.length > 0 ? Math.round(analytics.totalRevenue / list.length) : 0;
+        return analytics;
+    },
 
+    calculateRevenue(sales) {
+        const analytics = this.buildSalesAnalytics(sales);
         return {
-            todaySales,
-            monthlySales,
-            cashAllTime,
-            onlineAllTime,
-            pendingAllTime,
-            cashMonthly,
-            onlineMonthly,
-            sarees500,
-            sarees1000,
-            totalSarees,
-            customers500,
-            customers1000,
-            uniqueCustomers: uniquePhones.size,
-            totalBills,
-            paidBills,
-            pendingBills,
-            avgBill,
-            paymentTotals,
-            salesByDate,
-            salesByMonth
+            todaySales: analytics.todaySales,
+            monthlySales: analytics.monthlySales,
+            totalRevenue: analytics.totalRevenue,
+            avgBill: analytics.avgBill,
+            salesByDate: analytics.salesByDate,
+            salesByMonth: analytics.salesByMonth
+        };
+    },
+
+    calculateCustomers(sales) {
+        const analytics = this.buildSalesAnalytics(sales);
+        return {
+            uniqueCustomers: analytics.uniqueCustomers,
+            totalBills: analytics.totalBills,
+            paidBills: analytics.paidBills,
+            pendingBills: analytics.pendingBills,
+            customers500: analytics.customers500,
+            customers1000: analytics.customers1000
+        };
+    },
+
+    calculatePayments(sales) {
+        const analytics = this.buildSalesAnalytics(sales);
+        return {
+            cashAllTime: analytics.cashAllTime,
+            onlineAllTime: analytics.onlineAllTime,
+            pendingAllTime: analytics.pendingAllTime,
+            cashMonthly: analytics.cashMonthly,
+            onlineMonthly: analytics.onlineMonthly,
+            paymentTotals: analytics.paymentTotals,
+            totalBills: analytics.totalBills,
+            paidBills: analytics.paidBills,
+            pendingBills: analytics.pendingBills
+        };
+    },
+
+    calculateOfferStats(sales) {
+        const analytics = this.buildSalesAnalytics(sales);
+        return {
+            customers500: analytics.customers500,
+            customers1000: analytics.customers1000
+        };
+    },
+
+    calculateSareesSold(sales) {
+        const analytics = this.buildSalesAnalytics(sales);
+        return {
+            sarees500: analytics.sarees500,
+            sarees1000: analytics.sarees1000,
+            totalSarees: analytics.totalSarees
+        };
+    },
+
+    calculatePending(sales) {
+        const analytics = this.buildSalesAnalytics(sales);
+        return {
+            pendingAllTime: analytics.pendingAllTime,
+            pendingBills: analytics.pendingBills
+        };
+    },
+
+    // ── Centralized Sales Stats Calculation ────────────────────
+    calculateSalesStats(sales) {
+        const analytics = this.buildSalesAnalytics(sales);
+        return {
+            todaySales: analytics.todaySales,
+            monthlySales: analytics.monthlySales,
+            cashAllTime: analytics.cashAllTime,
+            onlineAllTime: analytics.onlineAllTime,
+            pendingAllTime: analytics.pendingAllTime,
+            cashMonthly: analytics.cashMonthly,
+            onlineMonthly: analytics.onlineMonthly,
+            sarees500: analytics.sarees500,
+            sarees1000: analytics.sarees1000,
+            totalSarees: analytics.totalSarees,
+            customers500: analytics.customers500,
+            customers1000: analytics.customers1000,
+            uniqueCustomers: analytics.uniqueCustomers,
+            totalBills: analytics.totalBills,
+            paidBills: analytics.paidBills,
+            pendingBills: analytics.pendingBills,
+            avgBill: analytics.avgBill,
+            paymentTotals: analytics.paymentTotals,
+            salesByDate: analytics.salesByDate,
+            salesByMonth: analytics.salesByMonth
         };
     }
 };

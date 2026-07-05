@@ -5,9 +5,25 @@ let _allRecords  = [];
 let _filteredRecords = [];
 
 // ── Called from refreshEntireApplication ──────────────────────
+async function refreshSalesRecords(sales) {
+    if (Array.isArray(sales)) {
+        if (!document.getElementById('recordsTbody')) return;
+        _allRecords = utils.getSalesData(sales).slice();
+        applyRecordFilters();
+        return;
+    }
+
+    if (!window.salesData || window.salesData.length === 0) {
+        await refreshEntireApplication();
+    } else {
+        _allRecords = utils.getSalesData(window.salesData).slice();
+        applyRecordFilters();
+    }
+}
+
 function updateRecordsUI(sales) {
     if (!document.getElementById('recordsTbody')) return;
-    _allRecords = sales.slice(); // keep a copy
+    _allRecords = utils.getSalesData(sales).slice(); // keep a copy
     applyRecordFilters();
 }
 
@@ -16,7 +32,7 @@ async function initRecords() {
     if (!window.salesData || window.salesData.length === 0) {
         await refreshEntireApplication();
     } else {
-        _allRecords = (window.salesData || []).slice();
+        _allRecords = utils.getSalesData(window.salesData).slice();
         applyRecordFilters();
     }
 

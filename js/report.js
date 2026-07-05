@@ -4,9 +4,32 @@ let _lineChartInst  = null;
 let _donutChartInst = null;
 
 // ── Called from refreshEntireApplication ──────────────────────
+async function refreshReports(sales) {
+    if (Array.isArray(sales)) {
+        if (!document.getElementById('rep-today')) return;
+        _renderReports(sales);
+        return;
+    }
+
+    if (!window.salesData || window.salesData.length === 0) {
+        await refreshEntireApplication();
+    } else {
+        _renderReports(window.salesData);
+    }
+}
+
 function updateReportsUI(sales) {
     if (!document.getElementById('rep-today')) return;
     _renderReports(sales);
+}
+
+async function refreshCharts(sales) {
+    const data = utils.getSalesData(sales);
+    const revenue = utils.calculateRevenue(data);
+    const sarees = utils.calculateSareesSold(data);
+
+    _renderLineChart(revenue.salesByDate);
+    _renderDonutChart(sarees.sarees500, sarees.sarees1000);
 }
 
 // ── Page init ─────────────────────────────────────────────────
@@ -20,17 +43,20 @@ async function initReports() {
 
 // ── Core render logic ─────────────────────────────────────────
 function _renderReports(sales) {
-    const s = utils.calculateSalesStats(sales || []);
+    const data = utils.getSalesData(sales);
+    const revenue = utils.calculateRevenue(data);
+    const payments = utils.calculatePayments(data);
+    const sarees = utils.calculateSareesSold(data);
 
     // Update stat cards
-    _setText('rep-today',   utils.formatCurrency(s.todaySales));
-    _setText('rep-monthly', utils.formatCurrency(s.monthlySales));
-    _setText('rep-cash',    utils.formatCurrency(s.cashMonthly));
-    _setText('rep-online',  utils.formatCurrency(s.onlineMonthly));
+    _setText('rep-today',   utils.formatCurrency(revenue.todaySales));
+    _setText('rep-monthly', utils.formatCurrency(revenue.monthlySales));
+    _setText('rep-cash',    utils.formatCurrency(payments.cashMonthly));
+    _setText('rep-online',  utils.formatCurrency(payments.onlineMonthly));
 
     // Render charts
-    _renderLineChart(s.salesByDate);
-    _renderDonutChart(s.sarees500, s.sarees1000);
+    _renderLineChart(revenue.salesByDate);
+    _renderDonutChart(sarees.sarees500, sarees.sarees1000);
 }
 
 // ── Helper ────────────────────────────────────────────────────

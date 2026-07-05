@@ -5,14 +5,16 @@
 // ─────────────────────────────────────────────────────────────────────────────
 async function refreshEntireApplication() {
     try {
-        const sales = await api.getSales();
-        window.salesData = sales;
+        const latestSales = await api.getSales();
+        window.salesData = latestSales;
 
-        // Update whichever page panels are currently in the DOM using ONLY window.salesData
-        if (typeof updateDashboardUI === 'function') updateDashboardUI(window.salesData);
-        if (typeof updateReportsUI   === 'function') updateReportsUI(window.salesData);
-        if (typeof updatePaymentsUI  === 'function') updatePaymentsUI(window.salesData);
-        if (typeof updateRecordsUI   === 'function') updateRecordsUI(window.salesData);
+        if (typeof refreshDashboard === 'function') await refreshDashboard(window.salesData);
+        if (typeof refreshReports === 'function') await refreshReports(window.salesData);
+        if (typeof refreshPayments === 'function') await refreshPayments(window.salesData);
+        if (typeof refreshSalesRecords === 'function') await refreshSalesRecords(window.salesData);
+        if (typeof refreshInvoice === 'function') await refreshInvoice(window.salesData);
+        if (typeof refreshStatistics === 'function') await refreshStatistics(window.salesData);
+        if (typeof refreshCharts === 'function') await refreshCharts(window.salesData);
     } catch (e) {
         console.error('refreshEntireApplication error:', e);
     }
@@ -138,7 +140,7 @@ function initApp() {
     if (localStorage.getItem('theme') === 'dark') {
         document.body.classList.add('dark-theme');
     }
-    window.salesData = [];
+    window.salesData = window.salesData || [];
     app.init();
     refreshEntireApplication().catch(err => console.warn('Initial load error:', err));
 }

@@ -5,7 +5,7 @@ let _currentInvoice = '';
 // ── Page init ─────────────────────────────────────────────────
 function initSales() {
     // Generate next invoice from the full sales list
-    _currentInvoice = utils.generateInvoice(window.salesData || []);
+    _currentInvoice = utils.generateInvoice(utils.getSalesData(window.salesData));
     const preview = document.getElementById('invoice-preview');
     if (preview) preview.textContent = '#' + _currentInvoice;
 
@@ -66,6 +66,12 @@ function calculateTotals() {
     if (totAmtEl)    totAmtEl.textContent    = utils.formatCurrency(total);
 
     if (document.getElementById('payment')?.value === 'Mixed') validateMixedAmounts();
+}
+
+async function refreshInvoice(sales) {
+    _currentInvoice = utils.generateInvoice(utils.getSalesData(sales));
+    const preview = document.getElementById('invoice-preview');
+    if (preview) preview.textContent = '#' + _currentInvoice;
 }
 
 // ── Mixed payment section toggle ──────────────────────────────
@@ -190,13 +196,16 @@ async function submitSale(print = false) {
 
         clearForm();
 
-        // Refresh global data and all UI panels
-        await refreshEntireApplication();
+        const latestSales = await api.getSales();
+        window.salesData = latestSales;
 
-        // Regenerate invoice number after refresh
-        _currentInvoice = utils.generateInvoice(window.salesData || []);
-        const preview = document.getElementById('invoice-preview');
-        if (preview) preview.textContent = '#' + _currentInvoice;
+        await refreshDashboard(window.salesData);
+        await refreshReports(window.salesData);
+        await refreshPayments(window.salesData);
+        await refreshSalesRecords(window.salesData);
+        await refreshInvoice(window.salesData);
+        await refreshStatistics(window.salesData);
+        await refreshCharts(window.salesData);
 
     } catch (err) {
         utils.showToast('Failed to save: ' + err.message, 'danger');
@@ -268,8 +277,8 @@ function printInvoice(data) {
 <body onload="window.print()">
     <div class="header">
         <h1>🏪 Chaitu Sarees</h1>
-        <p>123 Mega Shopping Mall, Hyderabad – 500001</p>
-        <p>📞 +91 9876543210 | chaitu.sarees@example.com</p>
+        <p>Old Sivalyam Backgate, Jain Temple Street, Tenali</p>
+        <p>📞 +91 9494977491 | parthivaaneesh@gmail.com</p>
     </div>
     <div class="info-row">
         <div class="info-col">

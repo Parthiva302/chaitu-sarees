@@ -3,7 +3,7 @@
 const API_URL = "https://script.google.com/macros/s/AKfycbxAtp6_h-TrIy4txzmUTB0kMw4GupekFPj2dkqHMggLltmd9Du20r6IGjNOU9fNttIO/exec";
 
 // Global sales cache - single source of truth
-window.salesData = [];
+window.salesData = window.salesData || [];
 
 // ── Normalize a single sale row from Google Sheets to our schema ───────────
 function normalizeSale(s) {
@@ -40,19 +40,18 @@ function normalizeSale(s) {
         }
     }
 
-    // Extract values supporting both new and old names
-    const invoice = String(s.invoice !== undefined ? s.invoice : (s.invoiceNumber !== undefined ? s.invoiceNumber : '')).trim();
+    const invoice = String(s.invoice || '').trim();
     const customerName = String(s.customerName || '').trim();
     const phone = String(s.phone || '').trim();
-    const offer = String(s.offer !== undefined ? s.offer : (s.offerCategory !== undefined ? s.offerCategory : '')).trim();
-    
-    const sarees500 = parseInt(s.sarees500 !== undefined ? s.sarees500 : (s.qty500 !== undefined ? s.qty500 : 0)) || 0;
-    const sarees1000 = parseInt(s.sarees1000 !== undefined ? s.sarees1000 : (s.qty1000 !== undefined ? s.qty1000 : 0)) || 0;
-    const totalSarees = parseInt(s.totalSarees !== undefined ? s.totalSarees : (s.totalQty !== undefined ? s.totalQty : (sarees500 + sarees1000))) || (sarees500 + sarees1000);
-    const amount = parseFloat(s.amount !== undefined ? s.amount : (sarees500 * 500 + sarees1000 * 1000)) || (sarees500 * 500 + sarees1000 * 1000);
-    
-    const payment = String(s.payment !== undefined ? s.payment : (s.paymentMethod !== undefined ? s.paymentMethod : '')).trim();
-    const status = String(s.status !== undefined ? s.status : (s.paymentStatus !== undefined ? s.paymentStatus : '')).trim();
+    const offer = String(s.offer || '').trim();
+
+    const sarees500 = parseInt(s.sarees500) || 0;
+    const sarees1000 = parseInt(s.sarees1000) || 0;
+    const totalSarees = parseInt(s.totalSarees) || (sarees500 + sarees1000);
+    const amount = parseFloat(s.amount) || (sarees500 * 500 + sarees1000 * 1000);
+
+    const payment = String(s.payment || '').trim();
+    const status = String(s.status || '').trim();
     const notes = String(s.notes || '').trim();
     const cashAmount = parseFloat(s.cashAmount) || 0;
     const onlineAmount = parseFloat(s.onlineAmount) || 0;

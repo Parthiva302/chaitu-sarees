@@ -1,6 +1,20 @@
 // payment.js
 
 // ── Called from refreshEntireApplication ──────────────────────
+async function refreshPayments(sales) {
+    if (Array.isArray(sales)) {
+        if (!document.getElementById('paymentBreakdownList')) return;
+        _renderPayments(sales);
+        return;
+    }
+
+    if (!window.salesData || window.salesData.length === 0) {
+        await refreshEntireApplication();
+    } else {
+        _renderPayments(window.salesData);
+    }
+}
+
 function updatePaymentsUI(sales) {
     if (!document.getElementById('paymentBreakdownList')) return;
     _renderPayments(sales);
@@ -31,17 +45,18 @@ function _renderPayments(sales) {
         'Other':         { icon: 'fa-circle-question',    color: 'text-muted'     },
     };
 
-    const s = utils.calculateSalesStats(sales || []);
-    const totals = s.paymentTotals;
-    const paidTotal = s.cashAllTime + s.onlineAllTime;
+    const data = utils.getSalesData(sales);
+    const payments = utils.calculatePayments(data);
+    const totals = payments.paymentTotals;
+    const paidTotal = payments.cashAllTime + payments.onlineAllTime;
     const grandTotal = paidTotal; // Total collected
 
     // Update summary cards
     _setText('pay-grand-total',    utils.formatCurrency(grandTotal));
-    _setText('pay-pending',        utils.formatCurrency(s.pendingAllTime));
-    _setText('pay-total-bills',    s.totalBills);
-    _setText('pay-paid-bills',     s.paidBills);
-    _setText('pay-pending-bills',  s.pendingBills);
+    _setText('pay-pending',        utils.formatCurrency(payments.pendingAllTime));
+    _setText('pay-total-bills',    payments.totalBills);
+    _setText('pay-paid-bills',     payments.paidBills);
+    _setText('pay-pending-bills',  payments.pendingBills);
 
     // Render breakdown list
     const list = document.getElementById('paymentBreakdownList');
@@ -63,8 +78,8 @@ function _renderPayments(sales) {
         const amt  = totals[key] || 0;
         if (amt <= 0) return;
         const def  = methodDefs[key] || { icon: 'fa-circle-question', color: 'text-muted' };
-        const pct  = grandTotal + s.pendingAllTime > 0
-            ? Math.round(amt / (grandTotal + s.pendingAllTime) * 100) : 0;
+        const pct  = grandTotal + payments.pendingAllTime > 0
+            ? Math.round(amt / (grandTotal + payments.pendingAllTime) * 100) : 0;
 
         list.innerHTML += `
             <div class="list-group-item d-flex justify-content-between align-items-center border-0 mb-2 rounded bg-light p-3">
