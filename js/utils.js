@@ -126,18 +126,18 @@ const utils = {
 
             const parsed = new Date(trimmed);
             if (!isNaN(parsed.getTime())) {
-                return this.formatKolkataDate(parsed);
+                return parsed.toISOString().split('T')[0];
             }
 
             return '';
         }
 
         if (value instanceof Date) {
-            return this.formatKolkataDate(value);
+            return value.toISOString().split('T')[0];
         }
 
         const parsed = new Date(value);
-        return isNaN(parsed.getTime()) ? '' : this.formatKolkataDate(parsed);
+        return isNaN(parsed.getTime()) ? '' : parsed.toISOString().split('T')[0];
     },
 
     getSalesData(sales) {

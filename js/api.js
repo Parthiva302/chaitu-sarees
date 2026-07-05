@@ -35,7 +35,7 @@ function normalizeSale(s) {
         }
     }
 
-    const invoice = String(s.invoice || '').trim();
+    const invoice = String(s.invoice || '').trim() || `NO-INVOICE-${dateVal || 'DATELESS'}-${String(s.phone || '').trim() || 'NOPHONE'}-${String(s.amount || '').trim() || '0'}`;
     const customerName = String(s.customerName || '').trim();
     const phone = String(s.phone || '').trim();
     const offer = String(s.offer || '').trim();
@@ -72,7 +72,6 @@ function normalizeSale(s) {
 
 // ── Determine if a row is the spreadsheet header row or empty ──────────────
 function isValidSaleRow(s) {
-    if (!s.invoice) return false;
     if (s.invoice === 'Invoice' || s.invoice === 'Invoice Number' || s.date === 'Date') return false;
     if (!s.customerName || !s.date) return false;
     if (isNaN(s.amount) || s.amount <= 0) return false;

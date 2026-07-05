@@ -60,11 +60,12 @@ function updateDashboardUI(sales) {
 
 // ── Page init ─────────────────────────────────────────────────
 async function initDashboard() {
-    if (!window.salesData || window.salesData.length === 0) {
-        await refreshEntireApplication();
-    } else {
-        updateDashboardUI(window.salesData);
+    if (!Array.isArray(window.salesData) || window.salesData.length === 0) {
+        const latestSales = await api.getSales();
+        window.salesData = latestSales;
     }
+
+    updateDashboardUI(window.salesData);
 }
 
 // ── Refresh button handler ─────────────────────────────────────

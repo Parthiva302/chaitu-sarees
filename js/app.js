@@ -26,11 +26,11 @@ async function refreshEntireApplication() {
 const app = {
     currentPage: 'dashboard',
 
-    init() {
+    async init() {
         this._bindSidebar();
         this._bindNav();
         this._startClock();
-        this.navigate(this.currentPage);
+        await this.navigate(this.currentPage);
     },
 
     // ── Sidebar toggle ──────────────────────────────────────────
@@ -107,7 +107,22 @@ const app = {
             container.classList.add('fade-in');
 
             // Run page init
-            this._initPage(page);
+            await this._initPage(page);
+
+            setTimeout(() => {
+                if (page === 'dashboard' && typeof updateDashboardUI === 'function') {
+                    updateDashboardUI(window.salesData);
+                }
+                if (page === 'reports' && typeof refreshReports === 'function') {
+                    refreshReports(window.salesData);
+                }
+                if (page === 'payments' && typeof refreshPayments === 'function') {
+                    refreshPayments(window.salesData);
+                }
+                if (page === 'records' && typeof refreshSalesRecords === 'function') {
+                    refreshSalesRecords(window.salesData);
+                }
+            }, 50);
         } catch (err) {
             container.innerHTML = `
                 <div class="alert alert-danger m-4" role="alert">
@@ -120,13 +135,13 @@ const app = {
     },
 
     // ── Per-page initialization ──────────────────────────────────
-    _initPage(page) {
+    async _initPage(page) {
         switch (page) {
-            case 'dashboard': if (typeof initDashboard === 'function') initDashboard(); break;
+            case 'dashboard': if (typeof initDashboard === 'function') await initDashboard(); break;
             case 'sales':     if (typeof initSales     === 'function') initSales();     break;
-            case 'records':   if (typeof initRecords   === 'function') initRecords();   break;
-            case 'reports':   if (typeof initReports   === 'function') initReports();   break;
-            case 'payments':  if (typeof initPayments  === 'function') initPayments();  break;
+            case 'records':   if (typeof initRecords   === 'function') await initRecords();   break;
+            case 'reports':   if (typeof initReports   === 'function') await initReports();   break;
+            case 'payments':  if (typeof initPayments  === 'function') await initPayments();  break;
             case 'settings':  if (typeof initSettings  === 'function') initSettings();  break;
         }
     }
@@ -135,14 +150,15 @@ const app = {
 // ─────────────────────────────────────────────────────────────────────────────
 // Bootstrap
 // ─────────────────────────────────────────────────────────────────────────────
-function initApp() {
+async function initApp() {
     // Restore dark mode if saved
     if (localStorage.getItem('theme') === 'dark') {
         document.body.classList.add('dark-theme');
     }
+
     window.salesData = window.salesData || [];
-    app.init();
-    refreshEntireApplication().catch(err => console.warn('Initial load error:', err));
+    await app.init();
+    await refreshEntireApplication();
 }
 
 document.addEventListener('DOMContentLoaded', initApp);
