@@ -147,23 +147,7 @@ const api = {
             return { success: true };
         }
 
-        try {
-            // Try POST delete request
-            const res = await fetch(API_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                body: JSON.stringify({ action: 'delete', invoice })
-            });
-            const text = await res.text();
-            const result = JSON.parse(text);
-            if (result.success || result.status === 'success') {
-                return result;
-            }
-        } catch (err) {
-            console.warn('deleteSale POST failed, trying GET fallback:', err);
-        }
-
-        // Try GET delete request fallback
+        // Try GET delete request
         try {
             const res = await fetch(`${API_URL}?action=delete&invoice=${invoice}&_=${Date.now()}`);
             const data = await res.json();

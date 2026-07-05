@@ -27,16 +27,9 @@ function updateRecordsUI(sales) {
     applyRecordFilters();
 }
 
-// ── Page init ─────────────────────────────────────────────────
 async function initRecords() {
-    if (!window.salesData || window.salesData.length === 0) {
-        await refreshEntireApplication();
-    } else {
-        _allRecords = utils.getSalesData(window.salesData).slice();
-        applyRecordFilters();
-    }
-
-    // Bind filter controls once
+    _allRecords = utils.getSalesData(window.salesData).slice();
+    applyRecordFilters();
     _bindRecordFilters();
 }
 

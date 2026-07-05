@@ -32,13 +32,8 @@ async function refreshCharts(sales) {
     _renderDonutChart(sarees.sarees500, sarees.sarees1000);
 }
 
-// ── Page init ─────────────────────────────────────────────────
 async function initReports() {
-    if (!window.salesData || window.salesData.length === 0) {
-        await refreshEntireApplication();
-    } else {
-        _renderReports(window.salesData);
-    }
+    _renderReports(window.salesData);
 }
 
 // ── Core render logic ─────────────────────────────────────────

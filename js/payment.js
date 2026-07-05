@@ -20,13 +20,8 @@ function updatePaymentsUI(sales) {
     _renderPayments(sales);
 }
 
-// ── Page init ─────────────────────────────────────────────────
 async function initPayments() {
-    if (!window.salesData || window.salesData.length === 0) {
-        await refreshEntireApplication();
-    } else {
-        _renderPayments(window.salesData);
-    }
+    _renderPayments(window.salesData);
 }
 
 // ── Core render logic ─────────────────────────────────────────

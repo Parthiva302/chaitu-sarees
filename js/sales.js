@@ -196,16 +196,7 @@ async function submitSale(print = false) {
 
         clearForm();
 
-        const latestSales = await api.getSales();
-        window.salesData = latestSales;
-
-        await refreshDashboard(window.salesData);
-        await refreshReports(window.salesData);
-        await refreshPayments(window.salesData);
-        await refreshSalesRecords(window.salesData);
-        await refreshInvoice(window.salesData);
-        await refreshStatistics(window.salesData);
-        await refreshCharts(window.salesData);
+        await refreshEntireApplication();
 
     } catch (err) {
         utils.showToast('Failed to save: ' + err.message, 'danger');

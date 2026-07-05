@@ -156,9 +156,17 @@ async function initApp() {
         document.body.classList.add('dark-theme');
     }
 
-    window.salesData = window.salesData || [];
+    window.salesData = [];
+    
+    // 1. Fetch data FIRST before initializing any pages
+    try {
+        window.salesData = await api.getSales();
+    } catch (e) {
+        console.error("Failed to load initial data", e);
+    }
+
+    // 2. Then initialize the app (which will render the dashboard with the data)
     await app.init();
-    await refreshEntireApplication();
 }
 
 document.addEventListener('DOMContentLoaded', initApp);
