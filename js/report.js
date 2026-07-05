@@ -70,8 +70,7 @@ function _renderLineChart(salesByDate) {
     const formatter = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' });
 
     for (let i = 6; i >= 0; i--) {
-        const d = new Date();
-        d.setDate(d.getDate() - i);
+        const d = new Date(Date.now() - i * 86400000);
         const dateStr = formatter.format(d); // "YYYY-MM-DD"
         
         // Extract day and month for label e.g., "DD/MM"

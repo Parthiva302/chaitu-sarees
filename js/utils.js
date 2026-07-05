@@ -46,21 +46,31 @@ const utils = {
     },
 
     // ── Date helpers (Forced to Asia/Kolkata Timezone) ─────────
-    formatKolkataDate(date) {
+    getLocalDateKey(dateInput) {
+        if (!dateInput) return '';
+        
+        let d;
+        if (typeof dateInput === 'string') {
+            const trimmed = dateInput.trim();
+            if (!trimmed) return '';
+            
+            // If it's just a date string like "2026-07-05", new Date() will parse it as UTC midnight.
+            // When formatted to Asia/Kolkata, it remains the same day (5:30 AM IST).
+            d = new Date(trimmed);
+        } else if (dateInput instanceof Date) {
+            d = dateInput;
+        } else {
+            d = new Date(dateInput);
+        }
+
+        if (isNaN(d.getTime())) return '';
+
         try {
-            const formatter = new Intl.DateTimeFormat('en-US', {
-                timeZone: 'Asia/Kolkata',
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit'
+            return d.toLocaleDateString('en-CA', {
+                timeZone: 'Asia/Kolkata'
             });
-            const parts = formatter.formatToParts(date);
-            const year = parts.find(p => p.type === 'year').value;
-            const month = parts.find(p => p.type === 'month').value;
-            const day = parts.find(p => p.type === 'day').value;
-            return `${year}-${month}-${day}`;
         } catch (e) {
-            const d = new Date(date);
+            // Fallback if en-CA or timeZone is not supported
             return d.getFullYear() + '-' +
                 String(d.getMonth() + 1).padStart(2, '0') + '-' +
                 String(d.getDate()).padStart(2, '0');
@@ -68,7 +78,7 @@ const utils = {
     },
 
     getCurrentDate() {
-        return this.formatKolkataDate(new Date());
+        return this.getLocalDateKey(new Date());
     },
 
     getCurrentTime() {
@@ -79,9 +89,8 @@ const utils = {
     },
 
     getYesterdayDate() {
-        const d = new Date();
-        d.setDate(d.getDate() - 1);
-        return this.formatKolkataDate(d);
+        const yesterdayTimestamp = Date.now() - 86400000;
+        return this.getLocalDateKey(new Date(yesterdayTimestamp));
     },
 
     getCurrentMonth() {
@@ -113,31 +122,7 @@ const utils = {
     },
 
     normalizeDateKey(value) {
-        if (!value) return '';
-
-        if (typeof value === 'string') {
-            const trimmed = value.trim();
-            if (!trimmed) return '';
-
-            const datePart = trimmed.split('T')[0].split(' ')[0];
-            if (/^\d{4}-\d{2}-\d{2}$/.test(datePart)) {
-                return datePart;
-            }
-
-            const parsed = new Date(trimmed);
-            if (!isNaN(parsed.getTime())) {
-                return parsed.toISOString().split('T')[0];
-            }
-
-            return '';
-        }
-
-        if (value instanceof Date) {
-            return value.toISOString().split('T')[0];
-        }
-
-        const parsed = new Date(value);
-        return isNaN(parsed.getTime()) ? '' : parsed.toISOString().split('T')[0];
+        return this.getLocalDateKey(value);
     },
 
     getSalesData(sales) {
