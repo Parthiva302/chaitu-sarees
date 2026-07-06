@@ -4,8 +4,18 @@ let _currentInvoice = '';
 
 // ── Page init ─────────────────────────────────────────────────
 function initSales() {
-    // Generate next invoice from the full sales list
-    _currentInvoice = utils.generateInvoice(utils.getSalesData(window.salesData));
+    let isEditMode = false;
+    
+    if (window.editSaleData) {
+        isEditMode = true;
+        _currentInvoice = window.editSaleData.invoice;
+        const formTitle = document.querySelector('h2.text-primary-custom');
+        if (formTitle) formTitle.innerHTML = '<i class="fa-solid fa-pencil me-2"></i> Edit Sale';
+    } else {
+        // Generate next invoice from the full sales list
+        _currentInvoice = utils.generateInvoice(utils.getSalesData(window.salesData));
+    }
+
     const preview = document.getElementById('invoice-preview');
     if (preview) preview.textContent = '#' + _currentInvoice;
 
@@ -33,7 +43,50 @@ function initSales() {
     if (q1kInput)  q1kInput.addEventListener('input',  calculateTotals);
 
     calculateTotals();
+
+    // Populate data if editing
+    if (window.editSaleData) {
+        populateEditForm(window.editSaleData);
+    }
 }
+
+function populateEditForm(data) {
+    document.getElementById('customerName').value = data.customerName || '';
+    document.getElementById('customerPhone').value = data.phone || '';
+    
+    const offerRadio = document.querySelector(`input[name="offer"][value="${data.offer}"]`);
+    if (offerRadio) {
+        offerRadio.checked = true;
+        _onOfferChange({ target: offerRadio });
+    }
+    
+    document.getElementById('sarees500').value = data.sarees500 || 0;
+    document.getElementById('sarees500-val').textContent = data.sarees500 || 0;
+    
+    document.getElementById('sarees1000').value = data.sarees1000 || 0;
+    document.getElementById('sarees1000-val').textContent = data.sarees1000 || 0;
+    
+    const paymentEl = document.getElementById('payment');
+    if (paymentEl) {
+        paymentEl.value = data.payment || 'Cash';
+        handlePaymentChange({ target: paymentEl });
+    }
+    
+    const statusPaid = document.getElementById('statusPaid');
+    const statusPending = document.getElementById('statusPending');
+    if (data.status === 'Paid' && statusPaid) statusPaid.checked = true;
+    else if (statusPending) statusPending.checked = true;
+    
+    if (data.payment === 'Mixed') {
+        document.getElementById('cashAmount').value = data.cashAmount || '';
+        document.getElementById('onlineAmount').value = data.onlineAmount || '';
+    }
+    
+    document.getElementById('notes').value = data.notes || '';
+    
+    calculateTotals();
+}
+
 
 // ── Offer styling ─────────────────────────────────────────────
 function _onOfferChange(e) {
@@ -114,6 +167,10 @@ function validateMixedAmounts() {
 
 // ── Clear form ────────────────────────────────────────────────
 function clearForm() {
+    window.editSaleData = null;
+    const formTitle = document.querySelector('h2.text-primary-custom');
+    if (formTitle) formTitle.innerHTML = '<i class="fa-solid fa-cart-plus me-2"></i> New Sale';
+
     const form = document.getElementById('newSaleForm');
     if (form) form.reset();
 
@@ -189,14 +246,31 @@ async function submitSale(print = false) {
     if (saveBtn) saveBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-2"></i>Saving...';
 
     try {
-        await api.saveSale(saleData);
-        utils.showToast('✓ Sale saved successfully!', 'success');
+        const wasEdit = !!window.editSaleData;
+        if (wasEdit) {
+            saleData.date = window.editSaleData.date;
+            saleData.time = window.editSaleData.time;
+            await api.updateSale(saleData);
+            utils.showToast('✓ Sale updated successfully!', 'success');
+        } else {
+            await api.saveSale(saleData);
+            utils.showToast('✓ Sale saved successfully!', 'success');
+        }
 
         if (print) printInvoice(saleData);
 
         clearForm();
 
         await refreshEntireApplication();
+        
+        if (wasEdit) {
+            app.navigate('records');
+        } else {
+            // refresh again inside sales view just to reset invoice number
+            _currentInvoice = utils.generateInvoice(utils.getSalesData(window.salesData));
+            const preview = document.getElementById('invoice-preview');
+            if (preview) preview.textContent = '#' + _currentInvoice;
+        }
 
     } catch (err) {
         utils.showToast('Failed to save: ' + err.message, 'danger');

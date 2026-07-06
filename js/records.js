@@ -129,14 +129,11 @@ function renderRecordsTable(data) {
             <td>${s.payment || '-'}</td>
             <td><span class="badge ${statusClass}">${s.status || '-'}</span></td>
             <td class="text-end text-nowrap">
-                <button class="btn btn-sm btn-outline-primary me-1"
-                    onclick="viewSaleRecord('${inv}')">
-                    <i class="fa-solid fa-eye"></i>
-                </button>
-                <button class="btn btn-sm btn-outline-danger"
-                    onclick="deleteSaleRecord('${inv}')">
-                    <i class="fa-solid fa-trash"></i>
-                </button>
+                <button class="btn btn-sm btn-outline-primary me-1" onclick="viewSaleRecord('${inv}')" title="View"><i class="fa-solid fa-eye"></i></button>
+                <button class="btn btn-sm btn-outline-secondary me-1" onclick="editSaleRecord('${inv}')" title="Edit"><i class="fa-solid fa-pencil"></i></button>
+                ${s.status === 'Pending' ? `<button class="btn btn-sm btn-outline-success me-1" onclick="openPaymentModal('${inv}')" title="Mark as Paid"><i class="fa-solid fa-sack-dollar"></i></button>` : ''}
+                <button class="btn btn-sm btn-outline-info me-1" onclick="reprintInvoice('${inv}')" title="Print"><i class="fa-solid fa-print"></i></button>
+                <button class="btn btn-sm btn-outline-danger" onclick="deleteSaleRecord('${inv}')" title="Delete"><i class="fa-solid fa-trash"></i></button>
             </td>`;
         tbody.appendChild(tr);
     });
@@ -211,9 +208,75 @@ function reprintInvoice(invoice) {
     if (s && typeof printInvoice === 'function') printInvoice(s);
 }
 
+// ── Edit Record ───────────────────────────────────────────────
+function editSaleRecord(invoice) {
+    const s = _allRecords.find(r => r.invoice === invoice);
+    if (!s) { utils.showToast('Record not found', 'warning'); return; }
+    window.editSaleData = s;
+    app.navigate('sales');
+}
+
+// ── Payment Modal ─────────────────────────────────────────────
+let _paymentInvoice = '';
+function openPaymentModal(invoice) {
+    const s = _allRecords.find(r => r.invoice === invoice);
+    if (!s) return;
+    _paymentInvoice = invoice;
+    
+    document.getElementById('paymentModalInvoice').textContent = s.invoice;
+    document.getElementById('paymentModalCustomer').textContent = s.customerName;
+    document.getElementById('paymentModalAmount').textContent = utils.formatCurrency(s.amount);
+    
+    const paymentSel = document.getElementById('paymentModalMethod');
+    if (paymentSel) paymentSel.value = s.payment || 'Cash';
+    
+    new bootstrap.Modal(document.getElementById('updatePaymentModal')).show();
+}
+
+async function confirmPayment() {
+    const method = document.getElementById('paymentModalMethod').value;
+    const btn = document.querySelector('#updatePaymentModal .btn-primary-custom');
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-2"></i>Updating...';
+    }
+    
+    try {
+        await api.updatePayment(_paymentInvoice, 'Paid', method);
+        utils.showToast('✅ Payment Updated Successfully', 'success');
+        
+        const modalEl = document.getElementById('updatePaymentModal');
+        const modal = bootstrap.Modal.getInstance(modalEl);
+        if (modal) modal.hide();
+        
+        await refreshEntireApplication();
+    } catch (err) {
+        utils.showToast('Failed to update payment: ' + err.message, 'danger');
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = 'Confirm Payment';
+        }
+    }
+}
+
 // ── Delete record ─────────────────────────────────────────────
-async function deleteSaleRecord(invoice) {
-    if (!confirm(`Delete invoice ${invoice}? This action cannot be undone.`)) return;
+let _deleteInvoice = '';
+function deleteSaleRecord(invoice) {
+    _deleteInvoice = invoice;
+    document.getElementById('deleteModalInvoiceText').textContent = 'Invoice: ' + invoice;
+    new bootstrap.Modal(document.getElementById('deleteConfirmModal')).show();
+}
+
+async function confirmDeleteSale() {
+    if (!_deleteInvoice) return;
+    const invoice = _deleteInvoice;
+    
+    const btn = document.querySelector('#deleteConfirmModal .btn-danger');
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-2"></i>Deleting...';
+    }
 
     // Save to local blacklist immediately so it never reappears in this client
     const deleted = JSON.parse(localStorage.getItem('deletedInvoices') || '[]');
@@ -233,9 +296,18 @@ async function deleteSaleRecord(invoice) {
         console.error('deleteSaleRecord API error:', err);
         utils.showToast('Record deleted locally.', 'warning');
     }
+    
+    const modalEl = document.getElementById('deleteConfirmModal');
+    const modal = bootstrap.Modal.getInstance(modalEl);
+    if (modal) modal.hide();
 
     // Refresh application UI
     await refreshEntireApplication();
+    
+    if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = 'Delete';
+    }
 }
 
 // ── Export to CSV ─────────────────────────────────────────────

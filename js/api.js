@@ -141,22 +141,82 @@ const api = {
         }
     },
 
+    // ── Update an existing sale ────────────────────────────────
+    async updateSale(saleObject) {
+        // Optimistic update
+        if (window.salesData) {
+            const idx = window.salesData.findIndex(s => s.invoice === saleObject.invoice);
+            if (idx !== -1) window.salesData[idx] = saleObject;
+        }
+
+        if (!API_URL) return { success: true };
+
+        try {
+            const payload = { action: 'updateSale', ...saleObject };
+            const res = await fetch(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify(payload)
+            });
+            const text = await res.text();
+            const result = JSON.parse(text);
+            if (!result.success) throw new Error(result.message || 'Update failed');
+            return result;
+        } catch (err) {
+            console.error('updateSale error:', err);
+            throw err;
+        }
+    },
+
+    // ── Update payment status ──────────────────────────────────
+    async updatePayment(invoice, status, paymentMethod) {
+        // Optimistic update
+        if (window.salesData) {
+            const sale = window.salesData.find(s => s.invoice === invoice);
+            if (sale) {
+                sale.status = status;
+                sale.payment = paymentMethod;
+            }
+        }
+
+        if (!API_URL) return { success: true };
+
+        try {
+            const payload = { action: 'updatePayment', invoice, status, payment: paymentMethod };
+            const res = await fetch(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify(payload)
+            });
+            const text = await res.text();
+            const result = JSON.parse(text);
+            if (!result.success) throw new Error(result.message || 'Update payment failed');
+            return result;
+        } catch (err) {
+            console.error('updatePayment error:', err);
+            throw err;
+        }
+    },
+
     // ── Delete a sale ──────────────────────────────────────────
     async deleteSale(invoice) {
         if (!API_URL) {
             return { success: true };
         }
 
-        // Try GET delete request
         try {
-            const res = await fetch(`${API_URL}?action=delete&invoice=${invoice}&_=${Date.now()}`);
-            const data = await res.json();
-            if (data.success || data.status === 'success') {
-                return data;
-            }
-            throw new Error(data.message || 'Delete fallback failed');
+            const payload = { action: 'deleteSale', invoice };
+            const res = await fetch(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify(payload)
+            });
+            const text = await res.text();
+            const result = JSON.parse(text);
+            if (!result.success) throw new Error(result.message || 'Delete failed');
+            return result;
         } catch (err) {
-            console.error('deleteSale GET fallback failed:', err);
+            console.error('deleteSale POST fallback failed:', err);
             throw err;
         }
     },
